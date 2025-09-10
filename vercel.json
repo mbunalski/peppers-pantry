@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  },
+  "env": {
+    "DATABASE_PATH": "/tmp/users.db"
+  },
+  "buildCommand": "npm run build"
+}

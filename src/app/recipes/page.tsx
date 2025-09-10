@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChefHatIcon, ClockIcon, UsersIcon, ExternalLinkIcon, SearchIcon, FilterIcon, XIcon, LockIcon } from "lucide-react";
@@ -126,7 +126,7 @@ const timeRanges = [
   { label: "2+ hours", min: 120 }
 ];
 
-export default function Recipes() {
+function RecipesContent() {
   const { user, token } = useAuth();
   const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
@@ -607,5 +607,13 @@ export default function Recipes() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Recipes() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RecipesContent />
+    </Suspense>
   );
 }
