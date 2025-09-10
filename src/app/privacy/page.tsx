@@ -1,30 +1,11 @@
 import Link from "next/link";
 import { ChefHatIcon } from "lucide-react";
+import Header from "../../components/Header";
 
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center">
-                <ChefHatIcon className="h-8 w-8 text-red-600" />
-                <span className="ml-2 text-2xl font-bold text-gray-900">Pepper's Pantry</span>
-              </Link>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Home</Link>
-                <Link href="/recipes" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Recipes</Link>
-                <Link href="/meal-plan" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Meal Plans</Link>
-                <Link href="/privacy" className="text-gray-900 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Privacy</Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Privacy Policy Content */}
       <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">

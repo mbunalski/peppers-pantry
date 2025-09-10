@@ -1,28 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { ChefHatIcon, MessageSquareIcon, CalendarIcon, ShoppingCartIcon, SparklesIcon, ClockIcon } from "lucide-react";
+import Header from "../components/Header";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
+  const { user } = useAuth();
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      {/* Navigation */}
-      <nav className="bg-white/90 backdrop-blur-sm shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <ChefHatIcon className="h-8 w-8 text-red-600" />
-              <span className="ml-2 text-2xl font-bold text-gray-900">Pepper's Pantry</span>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-4">
-                <Link href="/" className="text-gray-900 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Home</Link>
-                <Link href="/recipes" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Recipes</Link>
-                <Link href="/meal-plan" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Meal Plans</Link>
-                <Link href="/privacy" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Privacy</Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       {/* Hero Section */}
       <div className="relative overflow-hidden">
@@ -32,19 +19,19 @@ export default function Home() {
               <div className="sm:text-center lg:text-left">
                 <h1 className="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
                   <span className="block xl:inline">Smart meal planning</span>{' '}
-                  <span className="block text-red-600 xl:inline">via text message</span>
+                  <span className="block text-red-600 xl:inline">made simple</span>
                 </h1>
                 <p className="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                  Get personalized meal plans, recipe suggestions, and shopping lists delivered directly to your phone. 
-                  No app downloads, no complicated interfaces - just text and cook!
+                  Create personalized weekly meal plans, discover new recipes, and generate smart shopping lists. 
+                  Take the stress out of deciding "what's for dinner" with AI-powered recommendations tailored to your preferences.
                 </p>
                 <div className="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                   <div className="rounded-md shadow">
                     <Link
-                      href="#how-it-works"
+                      href={user ? "/meal-plan" : "/signup"}
                       className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700 md:py-4 md:text-lg md:px-10"
                     >
-                      Get Started
+                      {user ? "Create Meal Plan" : "Start Planning"}
                     </Link>
                   </div>
                   <div className="mt-3 sm:mt-0 sm:ml-3">
@@ -63,8 +50,8 @@ export default function Home() {
         <div className="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
           <div className="h-56 w-full bg-gradient-to-r from-orange-400 to-red-500 sm:h-72 md:h-96 lg:w-full lg:h-full flex items-center justify-center">
             <div className="text-white text-center">
-              <MessageSquareIcon className="h-24 w-24 mx-auto mb-4 opacity-80" />
-              <p className="text-xl font-semibold">Text "plan" to get started!</p>
+              <CalendarIcon className="h-24 w-24 mx-auto mb-4 opacity-80" />
+              <p className="text-xl font-semibold">Plan your week in minutes!</p>
             </div>
           </div>
         </div>
@@ -79,7 +66,7 @@ export default function Home() {
               Everything you need for meal planning
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              Powered by 121+ curated recipes from top food websites, with smart recommendations based on your preferences.
+              Powered by 121+ curated recipes from top food websites, with intelligent recommendations that learn your preferences and dietary needs.
             </p>
           </div>
 
@@ -93,7 +80,7 @@ export default function Home() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Weekly Meal Plans</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Get personalized 4-meal weekly plans based on your dietary preferences, budget, and time constraints.
+                  Create personalized weekly meal plans that fit your lifestyle, dietary needs, and budget constraints.
                 </dd>
               </div>
 
@@ -105,7 +92,7 @@ export default function Home() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Smart Recipe Suggestions</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Text ingredients you have on hand and get instant recipe recommendations from our curated database.
+                  Discover new recipes based on ingredients you have, dietary preferences, or cuisine types you love.
                 </dd>
               </div>
 
@@ -129,7 +116,7 @@ export default function Home() {
                   <p className="ml-16 text-lg leading-6 font-medium text-gray-900">Full Recipe Details</p>
                 </dt>
                 <dd className="mt-2 ml-16 text-base text-gray-500">
-                  Get complete ingredients lists and step-by-step instructions delivered directly to your phone.
+                  Access detailed recipes with ingredients, instructions, nutrition info, and cooking tips all in one place.
                 </dd>
               </div>
             </dl>
@@ -143,7 +130,7 @@ export default function Home() {
           <div className="lg:text-center">
             <h2 className="text-base text-red-600 font-semibold tracking-wide uppercase">How It Works</h2>
             <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-              Simple as 1-2-3
+              Plan your week in minutes
             </p>
           </div>
 
@@ -155,12 +142,12 @@ export default function Home() {
                 </div>
                 <h3 className="mt-4 text-lg leading-6 font-medium text-gray-900">Set Your Preferences</h3>
                 <p className="mt-2 text-base text-gray-500">
-                  Text your dietary preferences, budget, and time constraints. We'll remember them for future recommendations.
+                  Tell us about your dietary needs, budget, cooking time, and favorite cuisines. We'll personalize everything for you.
                 </p>
                 <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                  <code className="text-sm text-gray-700">
-                    "prefs vegetarian, budget 15, time 30"
-                  </code>
+                  <p className="text-sm text-gray-700">
+                    ✓ Vegetarian • $15/meal • 30min max
+                  </p>
                 </div>
               </div>
 
@@ -168,14 +155,14 @@ export default function Home() {
                 <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-500 text-white text-xl font-bold mx-auto">
                   2
                 </div>
-                <h3 className="mt-4 text-lg leading-6 font-medium text-gray-900">Get Your Plan</h3>
+                <h3 className="mt-4 text-lg leading-6 font-medium text-gray-900">Generate Your Plan</h3>
                 <p className="mt-2 text-base text-gray-500">
-                  Text "plan" to receive a personalized weekly meal plan, or "suggest chicken, rice" for specific recipes.
+                  Our AI creates a personalized weekly meal plan based on your preferences. Review, customize, and swap recipes as needed.
                 </p>
                 <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                  <code className="text-sm text-gray-700">
-                    "plan" or "suggest pasta, cheese"
-                  </code>
+                  <p className="text-sm text-gray-700">
+                    📅 4 meals • 🛒 Shopping list • ⏱️ Prep guides
+                  </p>
                 </div>
               </div>
 
@@ -183,14 +170,14 @@ export default function Home() {
                 <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-500 text-white text-xl font-bold mx-auto">
                   3
                 </div>
-                <h3 className="mt-4 text-lg leading-6 font-medium text-gray-900">Cook & Enjoy</h3>
+                <h3 className="mt-4 text-lg leading-6 font-medium text-gray-900">Cook & Share</h3>
                 <p className="mt-2 text-base text-gray-500">
-                  Get shopping lists, full recipes, and cooking instructions. Everything you need to create delicious meals!
+                  Access your recipes anywhere, check off shopping lists, and share your culinary successes with friends!
                 </p>
                 <div className="mt-4 p-4 bg-gray-100 rounded-lg">
-                  <code className="text-sm text-gray-700">
-                    "shopping" or "recipe 245"
-                  </code>
+                  <p className="text-sm text-gray-700">
+                    📱 Mobile access • ✅ Smart lists • 📸 Share photos
+                  </p>
                 </div>
               </div>
             </div>
@@ -203,14 +190,17 @@ export default function Home() {
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
           <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             <span className="block">Ready to simplify meal planning?</span>
-            <span className="block text-red-200">Start texting recipes today.</span>
+            <span className="block text-red-200">Create your first meal plan today.</span>
           </h2>
           <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
             <div className="inline-flex rounded-md shadow">
-              <div className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-red-600 bg-white hover:bg-gray-50">
-                <MessageSquareIcon className="h-5 w-5 mr-2" />
-                Text: Coming Soon!
-              </div>
+              <Link
+                href={user ? "/meal-plan" : "/signup"}
+                className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-red-600 bg-white hover:bg-gray-50"
+              >
+                <CalendarIcon className="h-5 w-5 mr-2" />
+                {user ? "Create Meal Plan" : "Get Started Free"}
+              </Link>
             </div>
           </div>
         </div>
