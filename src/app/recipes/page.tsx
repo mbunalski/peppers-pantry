@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ChefHatIcon, ClockIcon, UsersIcon, ExternalLinkIcon, SearchIcon, FilterIcon, XIcon, LockIcon } from "lucide-react";
 import Header from "../../components/Header";
 import { useAuth } from "../../contexts/AuthContext";
@@ -126,7 +127,8 @@ const timeRanges = [
 ];
 
 export default function Recipes() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
@@ -135,6 +137,12 @@ export default function Recipes() {
     difficulty: [] as string[],
     timeRange: null as any,
   });
+  const [userSavedRecipes, setUserSavedRecipes] = useState<number[]>([]);
+  const [userLovedRecipes, setUserLovedRecipes] = useState<number[]>([]);
+  const [isLoadingUserData, setIsLoadingUserData] = useState(false);
+  
+  // Get filter from URL params
+  const filterParam = searchParams.get('filter');
 
   // Filter recipes based on search and filters
   const filteredRecipes = sampleRecipes.filter(recipe => {
@@ -159,8 +167,54 @@ export default function Recipes() {
       ((!filters.timeRange.min || recipe.time >= filters.timeRange.min) && 
        (!filters.timeRange.max || recipe.time <= filters.timeRange.max));
 
-    return matchesSearch && matchesCuisine && matchesDietary && matchesDifficulty && matchesTime;
+    // URL filter (saved/loved recipes)
+    let matchesUrlFilter = true;
+    if (filterParam === 'saved' && user) {
+      matchesUrlFilter = userSavedRecipes.includes(recipe.id);
+    } else if (filterParam === 'loved' && user) {
+      matchesUrlFilter = userLovedRecipes.includes(recipe.id);
+    }
+
+    return matchesSearch && matchesCuisine && matchesDietary && matchesDifficulty && matchesTime && matchesUrlFilter;
   });
+
+  // Load user's saved and loved recipes when user logs in or filter param changes
+  useEffect(() => {
+    if (user && token) {
+      loadUserRecipeData();
+    }
+  }, [user, token, filterParam]);
+
+  const loadUserRecipeData = async () => {
+    if (!user || !token) return;
+    
+    setIsLoadingUserData(true);
+    try {
+      // Always load both saved and loved recipes so we can show counts and filter properly
+      const [savedResponse, lovedResponse] = await Promise.all([
+        fetch('/api/user/saved-recipes', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/user/loved-recipes', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
+
+      if (savedResponse.ok) {
+        const savedData = await savedResponse.json();
+        setUserSavedRecipes(savedData.recipes.map((r: any) => r.recipe_id));
+      }
+      
+      if (lovedResponse.ok) {
+        const lovedData = await lovedResponse.json();
+        setUserLovedRecipes(lovedData.recipes.map((r: any) => r.recipe_id));
+      }
+    } catch (error) {
+      console.error('Error loading user recipe data:', error);
+    } finally {
+      setIsLoadingUserData(false);
+    }
+  };
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters(prev => ({
@@ -235,8 +289,9 @@ export default function Recipes() {
               Recipe Collection
             </h1>
             <p className="mt-4 text-xl text-gray-500 max-w-3xl mx-auto">
-              Browse our curated collection of 121+ recipes from top food websites. 
-              Each recipe is available via SMS - just text the recipe ID to get full details!
+              {filterParam === 'saved' ? 'Your saved recipes' : 
+               filterParam === 'loved' ? 'Recipes you loved' :
+               'Browse our curated collection of 121+ recipes from top food websites. Each recipe is available via SMS - just text the recipe ID to get full details!'}
             </p>
           </div>
         </div>
@@ -245,6 +300,52 @@ export default function Recipes() {
       {/* Search & Filter Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
+          {/* Recipe Filter Tabs */}
+          {user && (
+            <div className="mb-6">
+              <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg max-w-md">
+                <Link
+                  href="/recipes"
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                    !filterParam 
+                      ? 'bg-white text-red-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  All Recipes
+                </Link>
+                <Link
+                  href="/recipes?filter=saved"
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                    filterParam === 'saved'
+                      ? 'bg-white text-red-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Saved {!isLoadingUserData && userSavedRecipes.length > 0 && (
+                    <span className="ml-1 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                      {userSavedRecipes.length}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/recipes?filter=loved"
+                  className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors text-center ${
+                    filterParam === 'loved'
+                      ? 'bg-white text-red-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Loved {!isLoadingUserData && userLovedRecipes.length > 0 && (
+                    <span className="ml-1 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                      {userLovedRecipes.length}
+                    </span>
+                  )}
+                </Link>
+              </div>
+            </div>
+          )}
+          
           {/* Search Bar */}
           <div className="flex items-center space-x-4 mb-6">
             <div className="flex-1 relative">
@@ -366,11 +467,13 @@ export default function Recipes() {
           {/* Results Summary */}
           <div className="mt-6 flex items-center justify-between text-sm text-gray-600">
             <span>
-              Showing {filteredRecipes.length} of {sampleRecipes.length} recipes
+              {isLoadingUserData ? 'Loading...' : `Showing ${filteredRecipes.length} ${filterParam ? `${filterParam} ` : ''}recipes`}
             </span>
-            <span>
-              From our collection of 121+ curated recipes
-            </span>
+            {!filterParam && (
+              <span>
+                From our collection of 121+ curated recipes
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -486,88 +589,7 @@ export default function Recipes() {
         </div>
       </div>
 
-      {/* Sign Up Nudge or Meal Planning CTA */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-8 border-2 border-red-200">
-          <div className="text-center">
-            {user ? (
-              <>
-                <ChefHatIcon className="h-12 w-12 text-red-600 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Ready to create your meal plan?
-                </h2>
-                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                  You've found some great recipes! Now create a personalized meal plan and generate your shopping list.
-                </p>
-                <div className="flex items-center justify-center space-x-4">
-                  <Link
-                    href="/meal-plan"
-                    className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 font-medium text-lg"
-                  >
-                    Create Meal Plan
-                  </Link>
-                  <Link
-                    href="/preferences"
-                    className="text-gray-600 hover:text-gray-700 font-medium"
-                  >
-                    Update preferences
-                  </Link>
-                </div>
-              </>
-            ) : (
-              <>
-                <LockIcon className="h-12 w-12 text-red-600 mx-auto mb-4" />
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                  Ready to start meal planning?
-                </h2>
-                <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-                  Create your free account to build personalized meal plans, generate smart shopping lists, 
-                  and save your favorite recipes. Join thousands who've simplified their meal planning!
-                </p>
-                <div className="flex items-center justify-center space-x-4">
-                  <Link
-                    href="/signup"
-                    className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 font-medium text-lg"
-                  >
-                    Sign Up Free - Start Planning
-                  </Link>
-                  <Link
-                    href="/login"
-                    className="text-gray-600 hover:text-gray-700 font-medium"
-                  >
-                    Already have an account?
-                  </Link>
-                </div>
-                <div className="mt-4 text-sm text-gray-500">
-                  ✓ Free forever ✓ No credit card required ✓ Set up in 2 minutes
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* SMS Instructions */}
-      <div className="bg-red-600 text-white">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold mb-4">
-              Ready to cook?
-            </h2>
-            <p className="text-xl text-red-200 mb-6">
-              Text any recipe ID to get the full recipe with ingredients and instructions!
-            </p>
-            <div className="bg-red-700 rounded-lg p-4 max-w-md mx-auto">
-              <code className="text-red-100">
-                Text "recipe 245" to get the Tofu Stir-fry recipe
-              </code>
-            </div>
-            <p className="text-sm text-red-200 mt-4">
-              SMS service coming soon! 📱
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Footer */}
       <footer className="bg-white">

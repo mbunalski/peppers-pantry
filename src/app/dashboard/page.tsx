@@ -1,193 +1,355 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChefHatIcon, CalendarIcon, ShoppingCartIcon, UserIcon, SettingsIcon, LogOutIcon, PlusIcon, EditIcon } from "lucide-react";
+import { 
+  ChefHatIcon, 
+  CalendarIcon, 
+  ShoppingCartIcon, 
+  UserIcon, 
+  SettingsIcon, 
+  HeartIcon,
+  BookmarkIcon,
+  PlusIcon,
+  ClockIcon,
+  DollarSignIcon,
+  TrendingUpIcon,
+  EyeIcon
+} from "lucide-react";
 import Header from "../../components/Header";
+import { useAuth } from "../../contexts/AuthContext";
 
-// Mock user data - in real app this would come from authentication
-const mockUser = {
-  name: "Sarah Johnson",
-  email: "sarah@example.com",
-  preferences: {
-    dietary: ["vegetarian"],
-    budget: 15,
-    time: 30,
-    complexity: "medium"
-  }
-};
-
-// Mock current meal plan
-const mockMealPlan = [
-  { day: "Monday", meal: "Vegetarian Stir Fry", completed: true },
-  { day: "Tuesday", meal: "Pasta Primavera", completed: false },
-  { day: "Wednesday", meal: "Buddha Bowl", completed: false },
-  { day: "Thursday", meal: "Veggie Burgers", completed: false }
-];
+interface DashboardData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  mealPlan: any;
+  shoppingList: any;
+  savedRecipes: any[];
+  lovedRecipes: any[];
+  stats: {
+    totalSavedRecipes: number;
+    totalLovedRecipes: number;
+    hasMealPlan: boolean;
+    hasShoppingList: boolean;
+  };
+}
 
 export default function Dashboard() {
+  const { user, token } = useAuth();
+  const router = useRouter();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user && !token) {
+      router.push('/login?redirect=/dashboard');
+    }
+  }, [user, token, router]);
+
+  // Load dashboard data
+  useEffect(() => {
+    if (user && token) {
+      loadDashboardData();
+    }
+  }, [user, token]);
+
+  const loadDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/user/dashboard', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
+        {/* Profile Header */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Welcome back, {mockUser.name.split(' ')[0]}!
-              </h1>
-              <p className="text-gray-600 mt-1">Here's your meal planning dashboard</p>
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-2xl font-bold">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">
+                  {user.name}
+                </h1>
+                <p className="text-gray-600">{user.email}</p>
+                <div className="flex items-center space-x-4 mt-2">
+                  <span className="text-sm text-gray-500">
+                    ❤️ {dashboardData?.stats.totalLovedRecipes || 0} loved
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    📌 {dashboardData?.stats.totalSavedRecipes || 0} saved
+                  </span>
+                </div>
+              </div>
             </div>
             <div className="flex space-x-3">
               <Link
-                href="/meal-plan/new"
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
+                href="/preferences"
+                className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
               >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                New Meal Plan
+                <SettingsIcon className="h-4 w-4 mr-2" />
+                Settings
               </Link>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Current Meal Plan */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">This Week's Meal Plan</h2>
-                <button className="text-red-600 hover:text-red-700 flex items-center text-sm">
-                  <EditIcon className="h-4 w-4 mr-1" />
-                  Edit Plan
-                </button>
-              </div>
-              
-              <div className="space-y-3">
-                {mockMealPlan.map((meal, index) => (
-                  <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <input 
-                      type="checkbox" 
-                      checked={meal.completed}
-                      className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded mr-3"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span className="text-sm font-medium text-gray-700 w-20">{meal.day}</span>
-                        <span className={`text-sm ${meal.completed ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
-                          {meal.meal}
-                        </span>
-                      </div>
-                    </div>
-                    <button className="text-red-600 hover:text-red-700 text-sm">
-                      View Recipe
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-4 p-3 bg-red-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-red-800">Need your shopping list?</span>
-                  <Link href="/shopping-list" className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">
-                    Generate List
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Link href="/recipes/search" className="p-4 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-red-50">
-                  <div className="text-center">
-                    <ChefHatIcon className="h-8 w-8 text-red-600 mx-auto mb-2" />
-                    <h4 className="font-medium text-gray-900">Browse Recipes</h4>
-                    <p className="text-sm text-gray-500">121+ curated recipes</p>
-                  </div>
-                </Link>
-                <Link href="/meal-plan/new" className="p-4 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-red-50">
-                  <div className="text-center">
-                    <CalendarIcon className="h-8 w-8 text-red-600 mx-auto mb-2" />
-                    <h4 className="font-medium text-gray-900">New Meal Plan</h4>
-                    <p className="text-sm text-gray-500">Plan next week</p>
-                  </div>
-                </Link>
-                <Link href="/shopping-list" className="p-4 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-red-50">
-                  <div className="text-center">
-                    <ShoppingCartIcon className="h-8 w-8 text-red-600 mx-auto mb-2" />
-                    <h4 className="font-medium text-gray-900">Shopping List</h4>
-                    <p className="text-sm text-gray-500">Current week's list</p>
-                  </div>
-                </Link>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center">
+              <CalendarIcon className="h-8 w-8 text-blue-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Meal Plan</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {dashboardData?.stats.hasMealPlan ? 'Active' : 'None'}
+                </p>
               </div>
             </div>
           </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* User Profile */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center mb-4">
-                <div className="bg-red-100 rounded-full p-3">
-                  <UserIcon className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-lg font-medium text-gray-900">{mockUser.name}</h3>
-                  <p className="text-sm text-gray-500">{mockUser.email}</p>
-                </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center">
+              <ShoppingCartIcon className="h-8 w-8 text-green-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Shopping List</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {dashboardData?.shoppingList?.items.length || 0} items
+                </p>
               </div>
-              <Link href="/preferences" className="block text-center bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-lg text-sm text-gray-700">
-                Edit Profile & Preferences
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center">
+              <HeartIcon className="h-8 w-8 text-red-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Loved Recipes</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {dashboardData?.stats.totalLovedRecipes || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center">
+              <BookmarkIcon className="h-8 w-8 text-yellow-600" />
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">Saved Recipes</p>
+                <p className="text-2xl font-semibold text-gray-900">
+                  {dashboardData?.stats.totalSavedRecipes || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Current Meal Plan */}
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-semibold text-gray-900">This Week's Meal Plan</h2>
+              <Link
+                href="/meal-plan"
+                className="text-red-600 hover:text-red-700 text-sm font-medium"
+              >
+                View Full Plan →
               </Link>
             </div>
-
-            {/* Current Preferences */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Preferences</h3>
+            
+            {dashboardData?.mealPlan?.items && dashboardData.mealPlan.items.length > 0 ? (
               <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Diet:</span>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {mockUser.preferences.dietary.map((diet, index) => (
-                      <span key={index} className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                        {diet}
-                      </span>
-                    ))}
+                {dashboardData.mealPlan.items.slice(0, 5).map((meal: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <CalendarIcon className="h-5 w-5 text-gray-500" />
+                      <div>
+                        <span className="font-medium text-gray-900">{meal.day_of_week}</span>
+                        <p className="text-sm text-gray-600">{meal.recipe_title}</p>
+                      </div>
+                    </div>
+                    {meal.recipeId && (
+                      <Link
+                        href={`/recipe/${meal.recipe_id}`}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </Link>
+                    )}
                   </div>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-700">Budget per meal:</span>
-                  <span className="text-sm font-medium text-gray-900">${mockUser.preferences.budget}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-700">Max cooking time:</span>
-                  <span className="text-sm font-medium text-gray-900">{mockUser.preferences.time} min</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-700">Complexity:</span>
-                  <span className="text-sm font-medium text-gray-900">{mockUser.preferences.complexity}</span>
-                </div>
+                ))}
+                {dashboardData.mealPlan.items.length > 5 && (
+                  <p className="text-center text-gray-500 text-sm">
+                    +{dashboardData.mealPlan.items.length - 5} more meals
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <CalendarIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No meal plan yet</h3>
+                <p className="text-gray-600 mb-4">Create your first meal plan to get started!</p>
+                <Link
+                  href="/meal-plan"
+                  className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700"
+                >
+                  Create Meal Plan
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Actions & Lists */}
+          <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <div className="space-y-3">
+                <Link
+                  href="/meal-plan"
+                  className="w-full flex items-center justify-between p-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100"
+                >
+                  <div className="flex items-center">
+                    <CalendarIcon className="h-5 w-5 mr-3" />
+                    <span>Manage Meal Plan</span>
+                  </div>
+                </Link>
+                <Link
+                  href="/shopping-list"
+                  className="w-full flex items-center justify-between p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100"
+                >
+                  <div className="flex items-center">
+                    <ShoppingCartIcon className="h-5 w-5 mr-3" />
+                    <span>Shopping List</span>
+                  </div>
+                  {dashboardData?.shoppingList?.items.length && (
+                    <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                      {dashboardData.shoppingList.items.length}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/recipes"
+                  className="w-full flex items-center justify-between p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
+                >
+                  <div className="flex items-center">
+                    <ChefHatIcon className="h-5 w-5 mr-3" />
+                    <span>Browse Recipes</span>
+                  </div>
+                </Link>
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Saved Recipes */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Stats</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-700">Meals planned:</span>
-                  <span className="text-sm font-medium text-gray-900">24</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-700">Recipes tried:</span>
-                  <span className="text-sm font-medium text-gray-900">12</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-700">Money saved:</span>
-                  <span className="text-sm font-medium text-green-600">$127</span>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Want to Make</h3>
+                <BookmarkIcon className="h-5 w-5 text-yellow-600" />
               </div>
+              {dashboardData?.savedRecipes && dashboardData.savedRecipes.length > 0 ? (
+                <div className="space-y-3">
+                  {dashboardData.savedRecipes.slice(0, 3).map((recipe) => (
+                    <Link
+                      key={recipe.id}
+                      href={`/recipe/${recipe.recipe_id}`}
+                      className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                    >
+                      <h4 className="font-medium text-gray-900">{recipe.title}</h4>
+                      <p className="text-sm text-gray-600">{recipe.summary}</p>
+                    </Link>
+                  ))}
+                  {dashboardData.savedRecipes.length > 3 && (
+                    <p className="text-center text-gray-500 text-sm">
+                      +{dashboardData.savedRecipes.length - 3} more saved
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No saved recipes yet</p>
+              )}
+            </div>
+
+            {/* Loved Recipes */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Loved Recipes</h3>
+                <HeartIcon className="h-5 w-5 text-red-600 fill-current" />
+              </div>
+              {dashboardData?.lovedRecipes && dashboardData.lovedRecipes.length > 0 ? (
+                <div className="space-y-3">
+                  {dashboardData.lovedRecipes.slice(0, 3).map((recipe) => (
+                    <Link
+                      key={recipe.recipe_id}
+                      href={`/recipe/${recipe.recipe_id}`}
+                      className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{recipe.title}</h4>
+                          <p className="text-sm text-gray-600">{recipe.summary}</p>
+                        </div>
+                        <div className="flex items-center space-x-1 text-xs text-gray-500">
+                          <span>❤️ {recipe.reactions.love}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  {dashboardData.lovedRecipes.length > 3 && (
+                    <p className="text-center text-gray-500 text-sm">
+                      +{dashboardData.lovedRecipes.length - 3} more loved
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm">No loved recipes yet</p>
+              )}
             </div>
           </div>
         </div>

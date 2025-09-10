@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { 
@@ -331,13 +331,220 @@ const mockRecipeData: { [key: string]: any } = {
 };
 
 export default function RecipePage() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const params = useParams();
   const recipeId = params.id as string;
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [reactions, setReactions] = useState({ love: 0, like: 0, vomit: 0 });
+  const [userReaction, setUserReaction] = useState<'love' | 'like' | 'vomit' | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isLoadingReactions, setIsLoadingReactions] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   
   const recipe = mockRecipeData[recipeId];
+
+  // Load reactions when component mounts
+  useEffect(() => {
+    if (recipe) {
+      loadReactions();
+      loadComments();
+      if (user) {
+        checkIfSaved();
+      }
+    }
+  }, [recipe, user]);
+
+  const loadReactions = async () => {
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/reactions`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setReactions(data.reactions);
+        setUserReaction(data.userReaction);
+      }
+    } catch (error) {
+      console.error('Error loading reactions:', error);
+    }
+  };
+
+  const checkIfSaved = async () => {
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/save`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIsSaved(data.isSaved);
+      }
+    } catch (error) {
+      console.error('Error checking saved status:', error);
+    }
+  };
+
+  const handleReaction = async (reactionType: 'love' | 'like' | 'vomit') => {
+    if (!user) {
+      alert('Sign up to react to recipes!');
+      window.location.href = '/signup';
+      return;
+    }
+
+    if (isLoadingReactions) return;
+
+    setIsLoadingReactions(true);
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/reactions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ reactionType })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReactions(data.reactions);
+        setUserReaction(data.userReaction);
+      }
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+    } finally {
+      setIsLoadingReactions(false);
+    }
+  };
+
+  const handleRemoveReaction = async () => {
+    if (!user || isLoadingReactions) return;
+
+    setIsLoadingReactions(true);
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/reactions`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReactions(data.reactions);
+        setUserReaction(null);
+      }
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+    } finally {
+      setIsLoadingReactions(false);
+    }
+  };
+
+  const handleSaveRecipe = async () => {
+    if (!user) {
+      alert('Sign up to save recipes!');
+      window.location.href = '/signup';
+      return;
+    }
+
+    try {
+      if (isSaved) {
+        // Unsave recipe
+        const response = await fetch(`/api/recipes/${recipeId}/save`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ listName: 'Want to Make' })
+        });
+
+        if (response.ok) {
+          setIsSaved(false);
+          alert('Recipe removed from Want to Make list!');
+        }
+      } else {
+        // Save recipe
+        const response = await fetch(`/api/recipes/${recipeId}/save`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ listName: 'Want to Make' })
+        });
+
+        if (response.ok) {
+          setIsSaved(true);
+          alert('Recipe saved to Want to Make list!');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving/unsaving recipe:', error);
+    }
+  };
+
+  const loadComments = async () => {
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/comments`);
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data.comments);
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    }
+  };
+
+  const handleSubmitComment = async (parentCommentId?: string) => {
+    if (!user) {
+      alert('Sign up to leave comments!');
+      window.location.href = '/signup';
+      return;
+    }
+
+    if (!newComment.trim()) return;
+
+    setIsSubmittingComment(true);
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          content: newComment.trim(),
+          parentCommentId: parentCommentId || replyTo
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setComments(data.comments);
+        setNewComment('');
+        setReplyTo(null);
+      }
+    } catch (error) {
+      console.error('Error submitting comment:', error);
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}d ago`;
+    }
+  };
 
   // If recipe not found, show error
   if (!recipe) {
@@ -429,48 +636,74 @@ export default function RecipePage() {
                 </div>
               )}
             </div>
-            <div className="flex space-x-3">
+            <div className="flex items-center space-x-6">
+              {/* Reaction Buttons */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => userReaction === 'love' ? handleRemoveReaction() : handleReaction('love')}
+                  disabled={isLoadingReactions}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                    userReaction === 'love' 
+                      ? 'bg-red-100 text-red-700 border-red-200' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+                  } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span className="text-lg">❤️</span>
+                  <span className="font-medium">{reactions.love}</span>
+                </button>
+                <button
+                  onClick={() => userReaction === 'like' ? handleRemoveReaction() : handleReaction('like')}
+                  disabled={isLoadingReactions}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                    userReaction === 'like' 
+                      ? 'bg-blue-100 text-blue-700 border-blue-200' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                  } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span className="text-lg">👍</span>
+                  <span className="font-medium">{reactions.like}</span>
+                </button>
+                <button
+                  onClick={() => userReaction === 'vomit' ? handleRemoveReaction() : handleReaction('vomit')}
+                  disabled={isLoadingReactions}
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                    userReaction === 'vomit' 
+                      ? 'bg-yellow-100 text-yellow-700 border-yellow-200' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
+                  } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <span className="text-lg">🤮</span>
+                  <span className="font-medium">{reactions.vomit}</span>
+                </button>
+              </div>
+
+              {/* Save Button */}
               <button
-                onClick={() => {
-                  if (!user) {
-                    alert('Sign up to save your favorite recipes!');
-                    window.location.href = '/signup';
-                  } else {
-                    setIsFavorited(!isFavorited);
-                    alert(isFavorited ? 'Removed from favorites!' : 'Added to favorites!');
-                  }
-                }}
-                className={`p-2 rounded-lg ${
-                  isFavorited && user ? 'bg-red-50 text-red-600' : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+                onClick={handleSaveRecipe}
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                  isSaved 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
                 }`}
               >
-                <HeartIcon className={`h-5 w-5 ${isFavorited && user ? 'fill-current' : ''}`} />
+                <BookmarkIcon className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+                <span className="text-sm font-medium">
+                  {isSaved ? 'Saved' : 'Save'}
+                </span>
               </button>
-              <button
-                onClick={() => {
-                  if (!user) {
-                    alert('Sign up to bookmark recipes for later!');
-                    window.location.href = '/signup';
-                  } else {
-                    setIsBookmarked(!isBookmarked);
-                    alert(isBookmarked ? 'Removed from bookmarks!' : 'Added to bookmarks!');
-                  }
-                }}
-                className={`p-2 rounded-lg ${
-                  isBookmarked && user ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-                }`}
-              >
-                <BookmarkIcon className={`h-5 w-5 ${isBookmarked && user ? 'fill-current' : ''}`} />
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
-              >
-                <ShareIcon className="h-5 w-5" />
-              </button>
-              <button className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
-                <PrinterIcon className="h-5 w-5" />
-              </button>
+
+              {/* Share & Print */}
+              <div className="flex space-x-2">
+                <button
+                  onClick={handleShare}
+                  className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
+                >
+                  <ShareIcon className="h-5 w-5" />
+                </button>
+                <button className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
+                  <PrinterIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -628,6 +861,161 @@ export default function RecipePage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Comments Section */}
+        <div className="mt-12 bg-white rounded-lg shadow-sm p-6">
+          <h3 className="text-2xl font-semibold text-gray-900 mb-6">
+            Comments ({comments.length})
+          </h3>
+
+          {/* Add Comment Form */}
+          <div className="mb-8">
+            <div className="flex space-x-3">
+              <div className="flex-shrink-0">
+                {user ? (
+                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+                )}
+              </div>
+              <div className="flex-1">
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder={user ? "Share your thoughts about this recipe..." : "Sign up to leave a comment"}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
+                  rows={3}
+                  maxLength={1000}
+                  disabled={!user}
+                />
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    {newComment.length}/1000 characters
+                  </span>
+                  <div className="flex space-x-2">
+                    {replyTo && (
+                      <button
+                        onClick={() => {
+                          setReplyTo(null);
+                          setNewComment('');
+                        }}
+                        className="text-gray-500 hover:text-gray-700 text-sm"
+                      >
+                        Cancel Reply
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleSubmitComment()}
+                      disabled={!user || !newComment.trim() || isSubmittingComment}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      {isSubmittingComment ? 'Posting...' : replyTo ? 'Reply' : 'Post Comment'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Comments List */}
+          <div className="space-y-6">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      {comment.user_name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">
+                        {comment.user_name}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {formatTimeAgo(comment.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-gray-700">{comment.content}</p>
+                    {comment.image_url && (
+                      <img
+                        src={comment.image_url}
+                        alt="Comment image"
+                        className="mt-3 rounded-lg max-w-sm"
+                      />
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex items-center space-x-4">
+                    <button
+                      onClick={() => {
+                        if (!user) {
+                          alert('Sign up to reply to comments!');
+                          window.location.href = '/signup';
+                          return;
+                        }
+                        setReplyTo(comment.id);
+                        setNewComment(`@${comment.user_name} `);
+                      }}
+                      className="text-sm text-gray-500 hover:text-red-600"
+                    >
+                      Reply
+                    </button>
+                  </div>
+
+                  {/* Replies */}
+                  {comment.replies && comment.replies.length > 0 && (
+                    <div className="mt-4 ml-4 space-y-4">
+                      {comment.replies.map((reply: any) => (
+                        <div key={reply.id} className="flex space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                              <span className="text-white text-xs font-medium">
+                                {reply.user_name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="bg-blue-50 rounded-lg p-3">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-gray-900 text-sm">
+                                  {reply.user_name}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {formatTimeAgo(reply.created_at)}
+                                </span>
+                              </div>
+                              <p className="text-gray-700 text-sm">{reply.content}</p>
+                              {reply.image_url && (
+                                <img
+                                  src={reply.image_url}
+                                  alt="Reply image"
+                                  className="mt-2 rounded-lg max-w-xs"
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {comments.length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No comments yet. Be the first to share your thoughts!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

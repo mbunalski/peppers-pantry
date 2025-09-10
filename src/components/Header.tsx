@@ -20,17 +20,14 @@ export default function Header() {
             <div className="ml-10 flex items-baseline space-x-4">
               <Link href="/" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Home</Link>
               <Link href="/recipes" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Recipes</Link>
-              <Link href="/meal-plan" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Meal Plans</Link>
-              {user && <Link href="/shopping-list" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Shopping Lists</Link>}
               <Link href="/privacy" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Privacy</Link>
               
               {user ? (
                 <div className="flex items-center space-x-3">
-                  <div className="flex items-center text-gray-700">
+                  <Link href={`/user/${user.id}`} className="flex items-center text-gray-700 hover:text-red-600 transition-colors">
                     <UserIcon className="h-5 w-5 mr-1" />
                     <span className="text-sm font-medium">{user.name}</span>
-                  </div>
-                  <Link href="/preferences" className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium">Preferences</Link>
+                  </Link>
                   <button
                     onClick={logout}
                     className="text-gray-500 hover:text-red-600 px-3 py-2 rounded-md text-sm font-medium"
