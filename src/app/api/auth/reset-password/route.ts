@@ -41,32 +41,32 @@ export async function POST(request: NextRequest) {
     const db = getDb();
     
     // Check if token exists and hasn't been used
-    const tokenRecord = db.prepare(`
+    const tokenResult = await db.query(`
       SELECT * FROM password_reset_tokens 
-      WHERE token = ? AND user_id = ? AND used = FALSE AND expires_at > datetime('now')
-    `).get(token, decoded.userId);
+      WHERE token = $1 AND user_id = $2 AND used = FALSE AND expires_at > CURRENT_TIMESTAMP
+    `, [token, decoded.userId]);
     
-    if (!tokenRecord) {
+    if (tokenResult.rows.length === 0) {
       return NextResponse.json(
         { error: 'Invalid, expired, or already used reset token' },
         { status: 400 }
       );
     }
     
+    const tokenRecord = tokenResult.rows[0];
+    
     // Hash new password
     const passwordHash = await hashPassword(password);
     
     // Update user password
-    const updateUserStmt = db.prepare(`
-      UPDATE users SET password_hash = ? WHERE id = ?
-    `);
-    updateUserStmt.run(passwordHash, decoded.userId);
+    await db.query(`
+      UPDATE users SET password_hash = $1 WHERE id = $2
+    `, [passwordHash, decoded.userId]);
     
     // Mark token as used
-    const markUsedStmt = db.prepare(`
-      UPDATE password_reset_tokens SET used = TRUE WHERE id = ?
-    `);
-    markUsedStmt.run(tokenRecord.id);
+    await db.query(`
+      UPDATE password_reset_tokens SET used = TRUE WHERE id = $1
+    `, [tokenRecord.id]);
     
     return NextResponse.json({
       message: 'Password reset successfully. You can now log in with your new password.'

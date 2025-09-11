@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
     
     console.log('Getting preferences for user:', user.id);
-    const preferences = getUserPreferences(user.id);
+    const preferences = await getUserPreferences(user.id);
     console.log('Retrieved preferences:', preferences);
     
     if (!preferences) {
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     };
     
     console.log('Saving preferences for user:', user.id, validPreferences);
-    saveUserPreferences(user.id, validPreferences);
+    await saveUserPreferences(user.id, validPreferences);
     console.log('Preferences saved successfully');
     
     return NextResponse.json({

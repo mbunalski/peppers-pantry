@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Get user from database
-    const user = getUserByEmail(email);
+    const user = await getUserByEmail(email);
     console.log('User found:', user ? 'Yes' : 'No');
     if (!user) {
       console.log('User not found in database');

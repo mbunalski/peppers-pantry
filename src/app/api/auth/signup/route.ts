@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if user already exists
-    const existingUser = getUserByEmail(email);
+    const existingUser = await getUserByEmail(email);
     console.log('Existing user check:', existingUser ? 'User exists' : 'User does not exist');
     if (existingUser) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     console.log('Hashing password...');
     const passwordHash = await hashPassword(password);
     console.log('Password hashed, creating user...');
-    const user = createUser(email, name, passwordHash);
+    const user = await createUser(email, name, passwordHash);
     console.log('User created:', { id: user.id, email: user.email, name: user.name });
     
     // Create JWT token
