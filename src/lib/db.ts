@@ -787,3 +787,84 @@ export async function createShoppingList(userId: string | number, items: any[], 
     throw error;
   }
 }
+
+// Additional missing functions
+export async function getFollowers(userId: string | number): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT u.id, u.name, u.email, uf.created_at as followed_at
+      FROM user_follows uf
+      JOIN users u ON uf.follower_id = u.id
+      WHERE uf.following_id = $1
+      ORDER BY uf.created_at DESC
+    `, [userId]);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting followers:', error);
+    throw error;
+  }
+}
+
+export async function getFollowing(userId: string | number): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT u.id, u.name, u.email, uf.created_at as followed_at
+      FROM user_follows uf
+      JOIN users u ON uf.following_id = u.id
+      WHERE uf.follower_id = $1
+      ORDER BY uf.created_at DESC
+    `, [userId]);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting following:', error);
+    throw error;
+  }
+}
+
+export async function isFollowing(followerId: string | number, followingId: string | number): Promise<boolean> {
+  return await isUserFollowing(followerId, followingId);
+}
+
+export async function getGlobalFeed(limit: number = 20, offset: number = 0): Promise<any[]> {
+  return await getActivityFeed(undefined, limit, offset);
+}
+
+export async function removeReaction(userId: string | number, recipeId: number): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      DELETE FROM recipe_reactions 
+      WHERE user_id = $1 AND recipe_id = $2
+    `, [userId, recipeId]);
+    
+    // Also remove from activity feed
+    await db.query(`
+      DELETE FROM activity_feed 
+      WHERE user_id = $1 AND recipe_id = $2 AND activity_type = 'reaction'
+    `, [userId, recipeId]);
+  } catch (error) {
+    console.error('Error removing reaction:', error);
+    throw error;
+  }
+}
+
+export async function createNotification(userId: string | number, fromUserId: string | number, type: string, recipeId?: number, commentId?: string, message: string = ''): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      INSERT INTO notifications (user_id, from_user_id, type, recipe_id, comment_id, message)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [userId, fromUserId, type, recipeId || null, commentId || null, message]);
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    throw error;
+  }
+}
