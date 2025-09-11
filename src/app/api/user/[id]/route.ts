@@ -4,7 +4,12 @@ import {
   getGlobalFeed, 
   getFollowers, 
   getFollowing,
-  isFollowing
+  isFollowing,
+  getUserById,
+  getActivityFeed,
+  getUserLovedRecipes,
+  getUserSavedRecipes,
+  getDb
 } from '../../../../lib/db';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -13,76 +18,37 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const resolvedParams = await params;
     const targetUserId = resolvedParams.id;
 
-    // Get user from database (this is simplified - in real app you'd have a users table)
-    const { getDb } = await import('../../../../lib/db');
-    const db = getDb();
-    
-    const userStmt = db.prepare(`
-      SELECT id, name, email, created_at FROM users WHERE id = ?
-    `);
-    const targetUser = userStmt.get(targetUserId);
+    // Get user from database
+    const targetUser = await getUserById(targetUserId);
     
     if (!targetUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get user's follower/following counts
-    const followers = getFollowers(targetUserId);
-    const following = getFollowing(targetUserId);
+    const followers = await getFollowers(targetUserId);
+    const following = await getFollowing(targetUserId);
 
     // Check if current user is following this user
     let isCurrentUserFollowing = false;
     if (currentUser && currentUser.id !== targetUserId) {
-      isCurrentUserFollowing = isFollowing(currentUser.id, targetUserId);
+      isCurrentUserFollowing = await isFollowing(currentUser.id, targetUserId);
     }
 
-    // Get user's recent activity (their reactions, comments, etc.)
-    const userActivityStmt = db.prepare(`
-      SELECT * FROM activity_feed 
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-      LIMIT 20
-    `);
-    const userActivity = userActivityStmt.all(targetUserId);
+    // Get user's recent activity
+    const userActivity = await getActivityFeed(targetUserId, 20, 0);
 
-    // Get user's loved recipes count
-    const lovedRecipesStmt = db.prepare(`
-      SELECT COUNT(*) as count FROM recipe_reactions 
-      WHERE user_id = ? AND reaction_type = 'love'
-    `);
-    const lovedRecipesCount = lovedRecipesStmt.get(targetUserId);
+    // Get user's loved recipes count and data
+    const lovedRecipesData = await getUserLovedRecipes(targetUserId);
+    const lovedRecipesCount = lovedRecipesData.length;
 
     // Get user's saved recipes count and data (only if viewing own profile)
-    let savedRecipesCount: any = { count: 0 };
+    let savedRecipesCount = 0;
     let savedRecipesData: any[] = [];
-    let lovedRecipesData: any[] = [];
     
     if (currentUser?.id === targetUserId) {
-      const savedRecipesStmt = db.prepare(`
-        SELECT COUNT(*) as count FROM saved_recipes 
-        WHERE user_id = ?
-      `);
-      savedRecipesCount = savedRecipesStmt.get(targetUserId);
-
-      // Get actual saved recipes data
-      const savedRecipesDataStmt = db.prepare(`
-        SELECT sr.*, sr.created_at as saved_at FROM saved_recipes sr
-        WHERE sr.user_id = ?
-        ORDER BY sr.created_at DESC
-        LIMIT 20
-      `);
-      savedRecipesData = savedRecipesDataStmt.all(targetUserId);
-
-      // Get actual loved recipes data
-      const lovedRecipesDataStmt = db.prepare(`
-        SELECT recipe_id, created_at FROM recipe_reactions 
-        WHERE user_id = ? AND reaction_type = 'love'
-        ORDER BY created_at DESC
-        LIMIT 20
-      `);
-      lovedRecipesData = lovedRecipesDataStmt.all(targetUserId);
-    } else {
-      savedRecipesCount = { count: null }; // Don't show count to others
+      savedRecipesData = await getUserSavedRecipes(targetUserId);
+      savedRecipesCount = savedRecipesData.length;
     }
 
     // Sample recipe data to get titles and details
@@ -121,8 +87,8 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       stats: {
         followersCount: followers.length,
         followingCount: following.length,
-        lovedRecipesCount: lovedRecipesCount?.count || 0,
-        savedRecipesCount: currentUser?.id === targetUserId ? (savedRecipesCount?.count || 0) : null // Only show to self
+        lovedRecipesCount: lovedRecipesCount,
+        savedRecipesCount: currentUser?.id === targetUserId ? savedRecipesCount : null // Only show to self
       },
       relationship: {
         isCurrentUserFollowing,
