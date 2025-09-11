@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pepper's Pantry - Smart Meal Planning",
-  description: "Create personalized weekly meal plans, discover new recipes, and generate smart shopping lists.",
+  title: "Pepper's Pantry - Social Cooking Platform",
+  description: "Your social cooking platform - plan meals, discover recipes, connect with fellow food lovers, and share your culinary journey.",
 };
 
 export default function RootLayout({
