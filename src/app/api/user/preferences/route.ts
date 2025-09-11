@@ -4,15 +4,19 @@ import { saveUserPreferences, getUserPreferences } from '../../../../lib/db';
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('GET preferences called');
     const user = getUserFromRequest(request);
     if (!user) {
+      console.log('Unauthorized request - no user');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
     
+    console.log('Getting preferences for user:', user.id);
     const preferences = getUserPreferences(user.id);
+    console.log('Retrieved preferences:', preferences);
     
     if (!preferences) {
       // Return default preferences if none exist
@@ -39,8 +43,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('POST preferences called');
     const user = getUserFromRequest(request);
     if (!user) {
+      console.log('Unauthorized request - no user');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -48,6 +54,7 @@ export async function POST(request: NextRequest) {
     }
     
     const preferences = await request.json();
+    console.log('Received preferences:', preferences);
     
     // Validate preferences structure
     const validPreferences = {
@@ -59,7 +66,9 @@ export async function POST(request: NextRequest) {
       favorite_cuisines: Array.isArray(preferences.favorite_cuisines) ? preferences.favorite_cuisines : []
     };
     
+    console.log('Saving preferences for user:', user.id, validPreferences);
     saveUserPreferences(user.id, validPreferences);
+    console.log('Preferences saved successfully');
     
     return NextResponse.json({
       message: 'Preferences saved successfully',

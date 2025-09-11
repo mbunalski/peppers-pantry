@@ -9,14 +9,24 @@ let db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (!db) {
-    // Ensure data directory exists
-    const fs = require('fs');
-    const dataDir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    try {
+      // Ensure data directory exists
+      const fs = require('fs');
+      const dataDir = path.dirname(DB_PATH);
+      console.log('Database path:', DB_PATH);
+      console.log('Database directory:', dataDir);
+      
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+        console.log('Created database directory:', dataDir);
+      }
+      
+      db = new Database(DB_PATH);
+      console.log('Database connection established');
+    } catch (error) {
+      console.error('Database connection error:', error);
+      throw error;
     }
-    
-    db = new Database(DB_PATH);
     
     // Create users table
     db.exec(`
