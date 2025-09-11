@@ -493,20 +493,297 @@ export async function addActivityFeedItem(userId: string, activityType: 'reactio
 // Export the db connection for use in other files
 export { getDb };
 
-// Placeholder functions that need to be implemented
-export function createMealPlan(userId: string, name: string = 'My Meal Plan'): Promise<string> {
-  // TODO: Implement PostgreSQL version
-  return Promise.resolve('placeholder-id');
+// Meal plan operations
+export async function createMealPlan(userId: string | number, name: string = 'My Meal Plan'): Promise<string> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      INSERT INTO meal_plans (user_id, name)
+      VALUES ($1, $2)
+      RETURNING id
+    `, [userId, name]);
+    
+    return result.rows[0].id.toString();
+  } catch (error) {
+    console.error('Error creating meal plan:', error);
+    throw error;
+  }
 }
 
-export function getUserMealPlan(userId: string): Promise<any | null> {
-  // TODO: Implement PostgreSQL version  
-  return Promise.resolve(null);
+export async function getUserMealPlan(userId: string | number): Promise<any | null> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT mp.*, mpi.id as item_id, mpi.recipe_id, mpi.recipe_title, mpi.day_of_week, mpi.meal_type
+      FROM meal_plans mp
+      LEFT JOIN meal_plan_items mpi ON mp.id = mpi.meal_plan_id
+      WHERE mp.user_id = $1
+      ORDER BY mp.created_at DESC, mpi.created_at
+      LIMIT 1
+    `, [userId]);
+    
+    if (result.rows.length === 0) return null;
+    
+    const mealPlan = {
+      id: result.rows[0].id.toString(),
+      name: result.rows[0].name,
+      created_at: result.rows[0].created_at,
+      items: result.rows.filter(row => row.item_id).map(row => ({
+        id: row.item_id.toString(),
+        recipe_id: row.recipe_id,
+        recipe_title: row.recipe_title,
+        day_of_week: row.day_of_week,
+        meal_type: row.meal_type
+      }))
+    };
+    
+    return mealPlan;
+  } catch (error) {
+    console.error('Error getting meal plan:', error);
+    throw error;
+  }
 }
 
-export function getUserSavedRecipes(userId: string, listName: string = 'Want to Make'): Promise<any[]> {
-  // TODO: Implement PostgreSQL version
-  return Promise.resolve([]);
+export async function addRecipeToMealPlan(mealPlanId: string | number, recipeId: number, recipeTitle: string, dayOfWeek: string, mealType: string = 'dinner'): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      INSERT INTO meal_plan_items (meal_plan_id, recipe_id, recipe_title, day_of_week, meal_type)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [mealPlanId, recipeId, recipeTitle, dayOfWeek, mealType]);
+  } catch (error) {
+    console.error('Error adding recipe to meal plan:', error);
+    throw error;
+  }
 }
 
-// More functions will be added as needed...
+export async function clearMealPlan(mealPlanId: string | number): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      DELETE FROM meal_plan_items WHERE meal_plan_id = $1
+    `, [mealPlanId]);
+  } catch (error) {
+    console.error('Error clearing meal plan:', error);
+    throw error;
+  }
+}
+
+export async function removeMealPlanItem(itemId: string | number): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      DELETE FROM meal_plan_items WHERE id = $1
+    `, [itemId]);
+  } catch (error) {
+    console.error('Error removing meal plan item:', error);
+    throw error;
+  }
+}
+
+// Recipe saving operations
+export async function saveRecipe(userId: string | number, recipeId: number, listName: string = 'Want to Make'): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      INSERT INTO saved_recipes (user_id, recipe_id, list_name)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, recipe_id, list_name) DO NOTHING
+    `, [userId, recipeId, listName]);
+  } catch (error) {
+    console.error('Error saving recipe:', error);
+    throw error;
+  }
+}
+
+export async function unsaveRecipe(userId: string | number, recipeId: number, listName: string = 'Want to Make'): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      DELETE FROM saved_recipes 
+      WHERE user_id = $1 AND recipe_id = $2 AND list_name = $3
+    `, [userId, recipeId, listName]);
+  } catch (error) {
+    console.error('Error unsaving recipe:', error);
+    throw error;
+  }
+}
+
+export async function isRecipeSaved(userId: string | number, recipeId: number, listName: string = 'Want to Make'): Promise<boolean> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT 1 FROM saved_recipes 
+      WHERE user_id = $1 AND recipe_id = $2 AND list_name = $3
+    `, [userId, recipeId, listName]);
+    
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error checking if recipe is saved:', error);
+    throw error;
+  }
+}
+
+export async function getUserSavedRecipes(userId: string | number, listName: string = 'Want to Make'): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT * FROM saved_recipes 
+      WHERE user_id = $1 AND list_name = $2
+      ORDER BY created_at DESC
+    `, [userId, listName]);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting saved recipes:', error);
+    throw error;
+  }
+}
+
+export async function getUserLovedRecipes(userId: string | number): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT recipe_id, created_at FROM recipe_reactions 
+      WHERE user_id = $1 AND reaction_type = 'love'
+      ORDER BY created_at DESC
+    `, [userId]);
+    
+    return result.rows.map(row => ({
+      recipe_id: row.recipe_id,
+      created_at: row.created_at
+    }));
+  } catch (error) {
+    console.error('Error getting loved recipes:', error);
+    throw error;
+  }
+}
+
+// User following operations
+export async function followUser(followerId: string | number, followingId: string | number): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      INSERT INTO user_follows (follower_id, following_id)
+      VALUES ($1, $2)
+      ON CONFLICT (follower_id, following_id) DO NOTHING
+    `, [followerId, followingId]);
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
+}
+
+export async function unfollowUser(followerId: string | number, followingId: string | number): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      DELETE FROM user_follows 
+      WHERE follower_id = $1 AND following_id = $2
+    `, [followerId, followingId]);
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    throw error;
+  }
+}
+
+export async function isUserFollowing(followerId: string | number, followingId: string | number): Promise<boolean> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT 1 FROM user_follows 
+      WHERE follower_id = $1 AND following_id = $2
+    `, [followerId, followingId]);
+    
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error checking if user is following:', error);
+    throw error;
+  }
+}
+
+// Activity feed operations
+export async function getActivityFeed(userId?: string | number, limit: number = 20, offset: number = 0): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    let query = `
+      SELECT af.*, u.name as user_name
+      FROM activity_feed af
+      JOIN users u ON af.user_id = u.id
+    `;
+    let params: any[] = [];
+    
+    if (userId) {
+      query += ` WHERE af.user_id = $1`;
+      params.push(userId);
+      query += ` ORDER BY af.created_at DESC LIMIT $2 OFFSET $3`;
+      params.push(limit, offset);
+    } else {
+      query += ` ORDER BY af.created_at DESC LIMIT $1 OFFSET $2`;
+      params.push(limit, offset);
+    }
+    
+    const result = await db.query(query, params);
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting activity feed:', error);
+    throw error;
+  }
+}
+
+// Shopping list operations
+export async function getUserShoppingList(userId: string | number, mealPlanId?: string | number): Promise<any | null> {
+  const db = await getDb();
+  
+  try {
+    let query = `
+      SELECT * FROM shopping_lists 
+      WHERE user_id = $1
+    `;
+    let params: any[] = [userId];
+    
+    if (mealPlanId) {
+      query += ` AND meal_plan_id = $2`;
+      params.push(mealPlanId);
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT 1`;
+    
+    const result = await db.query(query, params);
+    return result.rows.length > 0 ? result.rows[0] : null;
+  } catch (error) {
+    console.error('Error getting shopping list:', error);
+    throw error;
+  }
+}
+
+export async function createShoppingList(userId: string | number, items: any[], mealPlanId?: string | number, name: string = 'Shopping List'): Promise<string> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      INSERT INTO shopping_lists (user_id, meal_plan_id, name, items)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id
+    `, [userId, mealPlanId || null, name, JSON.stringify(items)]);
+    
+    return result.rows[0].id.toString();
+  } catch (error) {
+    console.error('Error creating shopping list:', error);
+    throw error;
+  }
+}
