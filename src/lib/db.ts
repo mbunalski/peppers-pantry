@@ -205,39 +205,62 @@ export function createUser(email: string, name: string, passwordHash: string): U
   const userId = crypto.randomUUID();
   const db = getDb();
   
-  const stmt = db.prepare(`
-    INSERT INTO users (id, email, name, password_hash)
-    VALUES (?, ?, ?, ?)
-  `);
+  console.log('Creating user in database:', { userId, email, name });
   
-  stmt.run(userId, email, name, passwordHash);
-  
-  return {
-    id: userId,
-    email,
-    name,
-    created_at: new Date().toISOString()
-  };
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO users (id, email, name, password_hash)
+      VALUES (?, ?, ?, ?)
+    `);
+    
+    const result = stmt.run(userId, email, name, passwordHash);
+    console.log('User insertion result:', result);
+    
+    // Verify user was created
+    const verifyStmt = db.prepare(`SELECT id, email, name FROM users WHERE id = ?`);
+    const createdUser = verifyStmt.get(userId);
+    console.log('Verification - user created:', createdUser);
+    
+    return {
+      id: userId,
+      email,
+      name,
+      created_at: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
 }
 
 export function getUserByEmail(email: string): UserWithPassword | null {
   const db = getDb();
   
-  const stmt = db.prepare(`
-    SELECT * FROM users WHERE email = ?
-  `);
+  console.log('Looking up user by email:', email);
   
-  const user = stmt.get(email) as any;
-  
-  if (!user) return null;
-  
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    password_hash: user.password_hash,
-    created_at: user.created_at
-  };
+  try {
+    const stmt = db.prepare(`
+      SELECT * FROM users WHERE email = ?
+    `);
+    
+    const user = stmt.get(email) as any;
+    console.log('Database query result:', user ? 'User found' : 'User not found');
+    
+    if (!user) return null;
+    
+    console.log('Returning user:', { id: user.id, email: user.email, name: user.name, hasPassword: !!user.password_hash });
+    
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      password_hash: user.password_hash,
+      created_at: user.created_at
+    };
+  } catch (error) {
+    console.error('Error getting user by email:', error);
+    throw error;
+  }
 }
 
 export function getUserById(id: string): User | null {

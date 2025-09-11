@@ -6,9 +6,11 @@ import { sendEmail, getWelcomeEmailTemplate } from '../../../../lib/email';
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json();
+    console.log('Signup attempt:', { name, email, passwordLength: password?.length });
     
     // Validate input
     if (!name || !email || !password) {
+      console.log('Missing required fields');
       return NextResponse.json(
         { error: 'Name, email, and password are required' },
         { status: 400 }
@@ -17,6 +19,7 @@ export async function POST(request: NextRequest) {
     
     // Check if user already exists
     const existingUser = getUserByEmail(email);
+    console.log('Existing user check:', existingUser ? 'User exists' : 'User does not exist');
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
@@ -25,8 +28,11 @@ export async function POST(request: NextRequest) {
     }
     
     // Hash password and create user
+    console.log('Hashing password...');
     const passwordHash = await hashPassword(password);
+    console.log('Password hashed, creating user...');
     const user = createUser(email, name, passwordHash);
+    console.log('User created:', { id: user.id, email: user.email, name: user.name });
     
     // Create JWT token
     const token = createToken(user);
