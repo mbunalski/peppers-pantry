@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createUser, getUserByEmail } from '../../../../lib/db';
 import { hashPassword, createToken } from '../../../../lib/auth';
-import { sendEmail, getWelcomeEmailTemplate } from '../../../../lib/email';
+// import { sendEmail, getWelcomeEmailTemplate } from '../../../../lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,20 +37,21 @@ export async function POST(request: NextRequest) {
     // Create JWT token
     const token = createToken(user);
     
-    // Send welcome email (don't block registration if email fails)
-    try {
-      const { subject, html, text } = getWelcomeEmailTemplate(name);
-      await sendEmail({
-        to: email,
-        subject,
-        htmlContent: html,
-        textContent: text
-      });
-      console.log('Welcome email sent to:', email);
-    } catch (emailError) {
-      console.error('Failed to send welcome email:', emailError);
-      // Don't fail registration if email fails
-    }
+    // Send welcome email (TEMPORARILY DISABLED FOR DEBUGGING)
+    // try {
+    //   const { subject, html, text } = getWelcomeEmailTemplate(name);
+    //   await sendEmail({
+    //     to: email,
+    //     subject,
+    //     htmlContent: html,
+    //     textContent: text
+    //   });
+    //   console.log('Welcome email sent to:', email);
+    // } catch (emailError) {
+    //   console.error('Failed to send welcome email:', emailError);
+    //   // Don't fail registration if email fails
+    // }
+    console.log('Email sending temporarily disabled for debugging');
     
     return NextResponse.json({
       message: 'User created successfully',
