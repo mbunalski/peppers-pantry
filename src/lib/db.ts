@@ -205,11 +205,14 @@ export async function createUser(email: string, name: string, passwordHash: stri
   console.log('Creating user in database:', { email, name });
   
   try {
+    // Generate a unique phone identifier for web users
+    const webUserPhone = `web-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     const result = await db.query(`
       INSERT INTO users (email, name, password_hash, phone, tz, meals_per_week)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, email, name, created_at
-    `, [email, name, passwordHash, 'web-user', 'America/New_York', 4]);
+    `, [email, name, passwordHash, webUserPhone, 'America/New_York', 4]);
     
     const user = result.rows[0];
     console.log('User created successfully:', { id: user.id, email: user.email, name: user.name });
