@@ -54,8 +54,15 @@ async function initializeSchema(): Promise<void> {
         complexity TEXT DEFAULT 'medium',
         allergens JSONB DEFAULT '[]',
         favorite_cuisines JSONB DEFAULT '[]',
+        meals_per_week INTEGER DEFAULT 7,
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Add meals_per_week column if it doesn't exist (migration)
+    await pool.query(`
+      ALTER TABLE user_preferences
+      ADD COLUMN IF NOT EXISTS meals_per_week INTEGER DEFAULT 7
     `);
     
     // Create meal plans table
@@ -292,6 +299,7 @@ export interface UserPreferences {
   complexity: string;
   allergens: string[];
   favorite_cuisines: string[];
+  meals_per_week: number;
 }
 
 export async function saveUserPreferences(userId: string | number, preferences: Partial<UserPreferences>): Promise<void> {
@@ -302,8 +310,8 @@ export async function saveUserPreferences(userId: string | number, preferences: 
   try {
     await pool.query(`
       INSERT INTO user_preferences 
-      (user_id, dietary_restrictions, budget_per_meal, max_cooking_time, complexity, allergens, favorite_cuisines, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+      (user_id, dietary_restrictions, budget_per_meal, max_cooking_time, complexity, allergens, favorite_cuisines, meals_per_week, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
       ON CONFLICT (user_id) DO UPDATE SET
         dietary_restrictions = $2,
         budget_per_meal = $3,
@@ -311,6 +319,7 @@ export async function saveUserPreferences(userId: string | number, preferences: 
         complexity = $5,
         allergens = $6,
         favorite_cuisines = $7,
+        meals_per_week = $8,
         updated_at = CURRENT_TIMESTAMP
     `, [
       userId,
@@ -319,7 +328,8 @@ export async function saveUserPreferences(userId: string | number, preferences: 
       preferences.max_cooking_time || 30,
       preferences.complexity || 'medium',
       JSON.stringify(preferences.allergens || []),
-      JSON.stringify(preferences.favorite_cuisines || [])
+      JSON.stringify(preferences.favorite_cuisines || []),
+      preferences.meals_per_week || 7
     ]);
     
     console.log('Preferences saved successfully');
@@ -347,7 +357,8 @@ export async function getUserPreferences(userId: string | number): Promise<UserP
       max_cooking_time: prefs.max_cooking_time,
       complexity: prefs.complexity,
       allergens: prefs.allergens,
-      favorite_cuisines: prefs.favorite_cuisines
+      favorite_cuisines: prefs.favorite_cuisines,
+      meals_per_week: prefs.meals_per_week || 7
     };
   } catch (error) {
     console.error('Error getting preferences:', error);
@@ -369,13 +380,10 @@ export async function addOrUpdateReaction(userId: string, recipeId: number, reac
         created_at = CURRENT_TIMESTAMP
     `, [userId, recipeId, reactionType]);
     
-    // Update or insert activity feed entry
+    // Add activity feed entry (allow duplicates since reactions can change)
     await pool.query(`
       INSERT INTO activity_feed (user_id, activity_type, recipe_id, metadata)
       VALUES ($1, 'reaction', $2, $3)
-      ON CONFLICT (user_id, recipe_id, activity_type) DO UPDATE SET
-        metadata = $3,
-        created_at = CURRENT_TIMESTAMP
     `, [userId, recipeId, JSON.stringify({ reaction_type: reactionType })]);
     
     console.log('Reaction updated successfully');
@@ -420,6 +428,29 @@ export async function getUserReactionForRecipe(userId: string, recipeId: number)
     return result.rows.length > 0 ? result.rows[0].reaction_type : null;
   } catch (error) {
     console.error('Error getting user reaction:', error);
+    throw error;
+  }
+}
+
+export async function getRecentReactionsForRecipe(recipeId: number, limit: number = 5): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT 
+        rr.reaction_type,
+        rr.created_at,
+        u.name
+      FROM recipe_reactions rr
+      JOIN users u ON rr.user_id = u.id
+      WHERE rr.recipe_id = $1
+      ORDER BY rr.created_at DESC
+      LIMIT $2
+    `, [recipeId, limit]);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting recent reactions:', error);
     throw error;
   }
 }
@@ -471,22 +502,11 @@ export async function addActivityFeedItem(userId: string, activityType: 'reactio
   const db = await getDb();
   
   try {
-    if (activityType === 'reaction') {
-      // For reactions, use upsert to avoid duplicates
-      await pool.query(`
-        INSERT INTO activity_feed (user_id, activity_type, recipe_id, target_id, metadata)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (user_id, recipe_id, activity_type) DO UPDATE SET
-          metadata = $5,
-          created_at = CURRENT_TIMESTAMP
-      `, [userId, activityType, recipeId, targetId || null, metadata || null]);
-    } else {
-      // For comments and other activities, always insert new
-      await pool.query(`
-        INSERT INTO activity_feed (user_id, activity_type, recipe_id, target_id, metadata)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [userId, activityType, recipeId, targetId || null, metadata || null]);
-    }
+    // Always insert new activity - duplicates are allowed since activities can change over time
+    await pool.query(`
+      INSERT INTO activity_feed (user_id, activity_type, recipe_id, target_id, metadata)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [userId, activityType, recipeId, targetId || null, metadata || null]);
   } catch (error) {
     console.error('Error adding activity feed item:', error);
     throw error;
@@ -522,9 +542,10 @@ export async function getUserMealPlan(userId: string | number): Promise<any | nu
       SELECT mp.*, mpi.id as item_id, mpi.recipe_id, mpi.recipe_title, mpi.day_of_week, mpi.meal_type
       FROM meal_plans mp
       LEFT JOIN meal_plan_items mpi ON mp.id = mpi.meal_plan_id
-      WHERE mp.user_id = $1
-      ORDER BY mp.created_at DESC, mpi.created_at
-      LIMIT 1
+      WHERE mp.user_id = $1 AND mp.id = (
+        SELECT id FROM meal_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1
+      )
+      ORDER BY mpi.created_at
     `, [userId]);
     
     if (result.rows.length === 0) return null;
@@ -572,6 +593,38 @@ export async function clearMealPlan(mealPlanId: string | number): Promise<void> 
     `, [mealPlanId]);
   } catch (error) {
     console.error('Error clearing meal plan:', error);
+    throw error;
+  }
+}
+
+export async function updateMealPlanItemDay(itemId: string | number, newDay: string): Promise<void> {
+  const db = await getDb();
+  
+  try {
+    await db.query(`
+      UPDATE meal_plan_items
+      SET day_of_week = $1
+      WHERE id = $2
+    `, [newDay, itemId]);
+  } catch (error) {
+    console.error('Error updating meal plan item day:', error);
+    throw error;
+  }
+}
+
+export async function getMealPlanItemsByDay(mealPlanId: string | number, day: string): Promise<any[]> {
+  const db = await getDb();
+  
+  try {
+    const result = await db.query(`
+      SELECT * FROM meal_plan_items
+      WHERE meal_plan_id = $1 AND day_of_week = $2
+      ORDER BY created_at
+    `, [mealPlanId, day]);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting meal plan items by day:', error);
     throw error;
   }
 }
@@ -672,6 +725,206 @@ export async function getUserLovedRecipes(userId: string | number): Promise<any[
   }
 }
 
+// Recipe database functions
+export async function getAllRecipes(limit?: number, offset?: number): Promise<any[]> {
+  const db = await getDb();
+
+  try {
+    let query = `
+      SELECT
+        id,
+        title,
+        source_url,
+        source_domain,
+        summary,
+        total_time_minutes,
+        servings,
+        calories,
+        macros,
+        tags,
+        author,
+        image_url
+      FROM recipes
+      ORDER BY id ASC
+    `;
+
+    const params = [];
+    if (limit) {
+      query += ` LIMIT $${params.length + 1}`;
+      params.push(limit);
+    }
+    if (offset) {
+      query += ` OFFSET $${params.length + 1}`;
+      params.push(offset);
+    }
+
+    const result = await db.query(query, params);
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting all recipes:', error);
+    throw error;
+  }
+}
+
+export async function searchRecipes(searchTerm: string, filters?: {
+  cuisine?: string[];
+  tags?: string[];
+  maxTime?: number;
+  minTime?: number;
+  limit?: number;
+  offset?: number;
+}): Promise<any[]> {
+  const db = await getDb();
+
+  try {
+    let query = `
+      SELECT
+        id,
+        title,
+        source_url,
+        source_domain,
+        summary,
+        total_time_minutes,
+        servings,
+        calories,
+        macros,
+        tags,
+        author,
+        image_url
+      FROM recipes
+      WHERE 1=1
+    `;
+
+    const params = [];
+
+    // Search term filter
+    if (searchTerm && searchTerm.trim()) {
+      params.push(`%${searchTerm.toLowerCase()}%`);
+      query += ` AND (
+        LOWER(title) LIKE $${params.length}
+        OR LOWER(summary) LIKE $${params.length}
+        OR EXISTS (
+          SELECT 1 FROM unnest(tags) AS tag
+          WHERE LOWER(tag) LIKE $${params.length}
+        )
+      )`;
+    }
+
+    // Tags filter (dietary restrictions, cuisine, etc.)
+    if (filters?.tags && filters.tags.length > 0) {
+      const tagConditions = filters.tags.map((tag, index) => {
+        params.push(tag.toLowerCase());
+        return `EXISTS (
+          SELECT 1 FROM unnest(tags) AS tag
+          WHERE LOWER(tag) = $${params.length}
+        )`;
+      });
+      query += ` AND (${tagConditions.join(' OR ')})`;
+    }
+
+    // Time range filters
+    if (filters?.maxTime) {
+      params.push(filters.maxTime);
+      query += ` AND total_time_minutes <= $${params.length}`;
+    }
+
+    if (filters?.minTime) {
+      params.push(filters.minTime);
+      query += ` AND total_time_minutes >= $${params.length}`;
+    }
+
+    query += ` ORDER BY id ASC`;
+
+    // Pagination
+    if (filters?.limit) {
+      params.push(filters.limit);
+      query += ` LIMIT $${params.length}`;
+    }
+    if (filters?.offset) {
+      params.push(filters.offset);
+      query += ` OFFSET $${params.length}`;
+    }
+
+    const result = await db.query(query, params);
+    return result.rows;
+  } catch (error) {
+    console.error('Error searching recipes:', error);
+    throw error;
+  }
+}
+
+export async function getRecipeById(id: number): Promise<any | null> {
+  const db = await getDb();
+
+  try {
+    const result = await db.query(`
+      SELECT
+        id,
+        title,
+        source_url,
+        source_domain,
+        summary,
+        total_time_minutes,
+        servings,
+        calories,
+        macros,
+        tags,
+        author,
+        image_url
+      FROM recipes
+      WHERE id = $1
+    `, [id]);
+
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('Error getting recipe by ID:', error);
+    throw error;
+  }
+}
+
+export async function getRecipeIngredients(recipeId: number): Promise<any[]> {
+  const db = await getDb();
+
+  try {
+    const result = await db.query(`
+      SELECT
+        name,
+        raw,
+        qty,
+        unit,
+        notes
+      FROM recipe_ingredients
+      WHERE recipe_id = $1
+      ORDER BY id
+    `, [recipeId]);
+
+    return result.rows || [];
+  } catch (error) {
+    console.error('Error getting recipe ingredients:', error);
+    throw error;
+  }
+}
+
+export async function getRecipeSteps(recipeId: number): Promise<any[]> {
+  const db = await getDb();
+
+  try {
+    const result = await db.query(`
+      SELECT
+        step_no,
+        text
+      FROM recipe_steps
+      WHERE recipe_id = $1
+      ORDER BY step_no
+    `, [recipeId]);
+
+    return result.rows || [];
+  } catch (error) {
+    console.error('Error getting recipe steps:', error);
+    throw error;
+  }
+}
+
 // User following operations
 export async function followUser(followerId: string | number, followingId: string | number): Promise<void> {
   const db = await getDb();
@@ -723,22 +976,56 @@ export async function getActivityFeed(userId?: string | number, limit: number = 
   const db = await getDb();
   
   try {
-    let query = `
-      SELECT af.*, u.name as user_name
-      FROM activity_feed af
-      JOIN users u ON af.user_id = u.id
-    `;
     let params: any[] = [];
+    let whereClause = '';
     
     if (userId) {
-      query += ` WHERE af.user_id = $1`;
+      whereClause = ' WHERE af.user_id = $1';
       params.push(userId);
-      query += ` ORDER BY af.created_at DESC LIMIT $2 OFFSET $3`;
-      params.push(limit, offset);
-    } else {
-      query += ` ORDER BY af.created_at DESC LIMIT $1 OFFSET $2`;
-      params.push(limit, offset);
     }
+    
+    // Get aggregated activity feed - group by recipe and show most recent activity per recipe
+    const query = `
+      WITH latest_activities AS (
+        SELECT DISTINCT
+          af.recipe_id,
+          FIRST_VALUE(af.user_id) OVER (PARTITION BY af.recipe_id ORDER BY af.created_at DESC) as recent_user_id,
+          FIRST_VALUE(af.activity_type) OVER (PARTITION BY af.recipe_id ORDER BY af.created_at DESC) as recent_activity_type,
+          FIRST_VALUE(af.metadata) OVER (PARTITION BY af.recipe_id ORDER BY af.created_at DESC) as recent_metadata,
+          MAX(af.created_at) OVER (PARTITION BY af.recipe_id) as latest_activity
+        FROM activity_feed af${whereClause}
+      ),
+      recipe_stats AS (
+        SELECT 
+          af.recipe_id,
+          COUNT(CASE WHEN af.activity_type = 'reaction' THEN 1 END) as reaction_count,
+          COUNT(CASE WHEN af.activity_type = 'comment' THEN 1 END) as comment_count,
+          COUNT(*) as total_activities,
+          ARRAY_AGG(DISTINCT u.name) FILTER (WHERE u.name IS NOT NULL) as participating_users,
+          ARRAY_AGG(DISTINCT af.activity_type) as activity_types
+        FROM activity_feed af
+        JOIN users u ON af.user_id = u.id${whereClause}
+        GROUP BY af.recipe_id
+      )
+      SELECT 
+        la.recipe_id,
+        la.latest_activity as created_at,
+        rs.reaction_count,
+        rs.comment_count,
+        rs.total_activities,
+        rs.participating_users,
+        rs.activity_types,
+        la.recent_activity_type as activity_type,
+        la.recent_metadata as metadata,
+        u.name as user_name
+      FROM latest_activities la
+      JOIN recipe_stats rs ON la.recipe_id = rs.recipe_id
+      JOIN users u ON la.recent_user_id = u.id
+      ORDER BY la.latest_activity DESC
+      LIMIT ${userId ? '$2' : '$1'} OFFSET ${userId ? '$3' : '$2'}
+    `;
+    
+    params.push(limit, offset);
     
     const result = await db.query(query, params);
     return result.rows;

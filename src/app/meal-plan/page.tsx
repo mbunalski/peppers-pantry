@@ -35,6 +35,29 @@ export default function MealPlan() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+  const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+
+  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "TBD"];
+
+  // Function to detect duplicate days (excluding TBD)
+  const getDuplicateDays = () => {
+    const dayCounts = {};
+    const duplicates = new Set();
+
+    mealPlan.forEach(meal => {
+      const day = meal.day_of_week || meal.day;
+      if (day && day !== 'TBD') {
+        dayCounts[day] = (dayCounts[day] || 0) + 1;
+        if (dayCounts[day] > 1) {
+          duplicates.add(day);
+        }
+      }
+    });
+
+    return duplicates;
+  };
+
+  const duplicateDays = getDuplicateDays();
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -189,6 +212,36 @@ export default function MealPlan() {
     }
   };
 
+  const updateMealPlanItemDay = async (itemId: string, newDay: string) => {
+    setUpdatingItemId(itemId);
+    try {
+      const response = await fetch('/api/meal-plan/update-item', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ itemId, day: newDay })
+      });
+
+      if (response.ok) {
+        // Update item in local state immediately for instant UI update
+        setMealPlan(prev => prev.map(item => 
+          item.id === itemId ? { ...item, day_of_week: newDay } : item
+        ));
+        setLastSaved(new Date().toLocaleTimeString());
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Error updating meal plan item.');
+      }
+    } catch (error) {
+      console.error('Error updating meal plan item:', error);
+      alert('Error updating meal plan item. Please try again.');
+    } finally {
+      setUpdatingItemId(null);
+    }
+  };
+
   if (!user) {
     return <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="text-center">Loading...</div>
@@ -275,19 +328,64 @@ export default function MealPlan() {
               </div>
               
               {mealPlan.length > 0 ? (
+                <>
+                  {duplicateDays.size > 0 && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <div className="flex items-start">
+                        <span className="text-red-600 mr-2">⚠️</span>
+                        <div>
+                          <h4 className="text-sm font-medium text-red-800">Duplicate Days Detected</h4>
+                          <p className="text-sm text-red-700 mt-1">
+                            You have multiple meals scheduled for: {Array.from(duplicateDays).join(', ')}.
+                            Consider changing the day for some meals to avoid conflicts.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 <div className="space-y-4">
-                  {mealPlan.map((meal, index) => (
-                    <div key={index} className={`flex items-center p-4 bg-gray-50 rounded-lg ${removingItemId === meal.id ? 'opacity-50' : ''}`}>
-                      <div className="flex-shrink-0 w-20">
-                        <span className="text-sm font-medium text-gray-700">{meal.day}</span>
+                  {mealPlan.map((meal, index) => {
+                    const mealDay = meal.day_of_week || meal.day;
+                    const isDuplicate = mealDay !== 'TBD' && duplicateDays.has(mealDay);
+
+                    return (
+                    <div key={index} className={`flex items-center p-4 rounded-lg transition-all duration-200 ${
+                      isDuplicate
+                        ? 'bg-red-50 border-2 border-red-200 shadow-md'
+                        : 'bg-gray-50'
+                    } ${(removingItemId === meal.id || updatingItemId === meal.id) ? 'opacity-50' : ''}`}>
+                      <div className="flex-shrink-0 w-32">
+                        <select
+                          value={meal.day_of_week || meal.day}
+                          onChange={(e) => updateMealPlanItemDay(meal.id, e.target.value)}
+                          disabled={updatingItemId === meal.id}
+                          className={`text-sm font-medium bg-white border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isDuplicate
+                              ? 'text-red-700 border-red-300 focus:ring-red-500'
+                              : 'text-gray-700 border-gray-300 focus:ring-red-500'
+                          }`}
+                        >
+                          {daysOfWeek.map((day) => (
+                            <option key={day} value={day}>{day}</option>
+                          ))}
+                        </select>
                       </div>
                       <div className="flex-1 ml-4">
-                        <h3 className="text-base font-medium text-gray-900">{meal.meal}</h3>
+                        <h3 className={`text-base font-medium ${
+                          isDuplicate ? 'text-red-900' : 'text-gray-900'
+                        }`}>
+                          {meal.recipe_title || meal.meal}
+                        </h3>
+                        {isDuplicate && (
+                          <p className="text-xs text-red-600 mt-1 font-medium">
+                            ⚠️ Duplicate day - multiple meals scheduled
+                          </p>
+                        )}
                       </div>
                       <div className="flex-shrink-0 flex space-x-2">
-                        {meal.recipeId && (
+                        {(meal.recipe_id || meal.recipeId) && (
                           <Link
-                            href={`/recipe/${meal.recipeId}`}
+                            href={`/recipe/${meal.recipe_id || meal.recipeId}`}
                             className="text-blue-600 hover:text-blue-700 text-sm font-medium"
                           >
                             View Recipe
@@ -295,15 +393,17 @@ export default function MealPlan() {
                         )}
                         <button 
                           onClick={() => removeMealPlanItem(meal.id)}
-                          disabled={removingItemId === meal.id}
+                          disabled={removingItemId === meal.id || updatingItemId === meal.id}
                           className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {removingItemId === meal.id ? 'Removing...' : 'Remove'}
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
+                </>
               ) : (
                 <div className="text-center py-12">
                   <CalendarIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />

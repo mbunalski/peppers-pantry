@@ -7,113 +7,6 @@ import { ChefHatIcon, ClockIcon, UsersIcon, ExternalLinkIcon, SearchIcon, Filter
 import Header from "../../components/Header";
 import { useAuth } from "../../contexts/AuthContext";
 
-// Sample recipes data - expanded for better filtering
-const sampleRecipes = [
-  {
-    id: 245,
-    title: "Tofu stir-fry",
-    time: 30,
-    servings: 4,
-    difficulty: "Easy",
-    cuisine: "Asian",
-    dietary: ["vegetarian", "vegan"],
-    summary: "Quick and healthy vegetarian stir-fry with tofu and fresh vegetables",
-    ingredients: ["tofu", "soy sauce", "honey", "broccoli", "carrots", "ginger"],
-    source: "BBC Good Food",
-    url: "https://www.bbcgoodfood.com/recipes/tofu-stir-fry"
-  },
-  {
-    id: 194,
-    title: "Bolognese Sauce",
-    time: 120,
-    servings: 6,
-    difficulty: "Medium",
-    cuisine: "Italian",
-    dietary: [],
-    summary: "Classic Italian meat sauce perfect for pasta dishes",
-    ingredients: ["ground beef", "tomatoes", "onion", "garlic", "red wine", "herbs"],
-    source: "Serious Eats",
-    url: "https://www.seriouseats.com/best-slow-cooked-bolognese-sauce"
-  },
-  {
-    id: 43,
-    title: "Chicken Alfredo",
-    time: 25,
-    servings: 4,
-    difficulty: "Easy",
-    cuisine: "Italian",
-    dietary: [],
-    summary: "Creamy pasta dish with tender chicken and rich alfredo sauce",
-    ingredients: ["chicken breast", "pasta", "cream", "parmesan", "garlic", "butter"],
-    source: "AllRecipes",
-    url: "#"
-  },
-  {
-    id: 129,
-    title: "World's Best Lasagna",
-    time: 90,
-    servings: 8,
-    difficulty: "Hard",
-    cuisine: "Italian",
-    dietary: [],
-    summary: "Layered pasta dish with meat sauce, cheese, and bechamel",
-    ingredients: ["ground beef", "lasagna noodles", "ricotta", "mozzarella", "tomato sauce"],
-    source: "AllRecipes",
-    url: "#"
-  },
-  {
-    id: 76,
-    title: "Thai Green Curry",
-    time: 45,
-    servings: 4,
-    difficulty: "Medium",
-    cuisine: "Thai",
-    dietary: ["vegetarian"],
-    summary: "Aromatic curry with coconut milk and fresh vegetables",
-    ingredients: ["curry paste", "coconut milk", "vegetables", "thai basil", "lime"],
-    source: "Thai Kitchen",
-    url: "#"
-  },
-  {
-    id: 88,
-    title: "Greek Salad Bowl",
-    time: 15,
-    servings: 2,
-    difficulty: "Easy",
-    cuisine: "Mediterranean",
-    dietary: ["vegetarian"],
-    summary: "Fresh Mediterranean salad with feta and olives",
-    ingredients: ["cucumber", "tomatoes", "feta", "olives", "red onion", "olive oil"],
-    source: "Mediterranean Diet",
-    url: "#"
-  },
-  {
-    id: 102,
-    title: "Beef Tacos",
-    time: 35,
-    servings: 4,
-    difficulty: "Easy",
-    cuisine: "Mexican",
-    dietary: [],
-    summary: "Seasoned ground beef tacos with fresh toppings",
-    ingredients: ["ground beef", "taco seasoning", "tortillas", "lettuce", "cheese", "tomatoes"],
-    source: "Mexican Cooking",
-    url: "#"
-  },
-  {
-    id: 156,
-    title: "Quinoa Buddha Bowl",
-    time: 40,
-    servings: 2,
-    difficulty: "Medium",
-    cuisine: "American",
-    dietary: ["vegetarian", "vegan"],
-    summary: "Nutritious bowl with quinoa, roasted vegetables, and tahini dressing",
-    ingredients: ["quinoa", "sweet potato", "chickpeas", "spinach", "tahini", "lemon"],
-    source: "Healthy Eats",
-    url: "#"
-  }
-];
 
 // Filter options
 const cuisineOptions = ["Italian", "Asian", "Thai", "Mediterranean", "Mexican", "American"];
@@ -137,6 +30,8 @@ function RecipesContent() {
     difficulty: [] as string[],
     timeRange: null as any,
   });
+  const [recipes, setRecipes] = useState<any[]>([]);
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(true);
   const [userSavedRecipes, setUserSavedRecipes] = useState<number[]>([]);
   const [userLovedRecipes, setUserLovedRecipes] = useState<number[]>([]);
   const [isLoadingUserData, setIsLoadingUserData] = useState(false);
@@ -144,30 +39,61 @@ function RecipesContent() {
   // Get filter from URL params
   const filterParam = searchParams.get('filter');
 
+  // Load recipes from API
+  useEffect(() => {
+    loadRecipes();
+  }, [searchTerm, filters]);
+
+  const loadRecipes = async () => {
+    setIsLoadingRecipes(true);
+    try {
+      const params = new URLSearchParams();
+
+      if (searchTerm) {
+        params.set('search', searchTerm);
+      }
+
+      // Add tags based on filters
+      const tags = [];
+      if (filters.cuisine.length > 0) {
+        tags.push(...filters.cuisine.map(c => c.toLowerCase()));
+      }
+      if (filters.dietary.length > 0) {
+        tags.push(...filters.dietary);
+      }
+      if (filters.difficulty.length > 0) {
+        tags.push(...filters.difficulty.map(d => d.toLowerCase()));
+      }
+
+      if (tags.length > 0) {
+        params.set('tags', tags.join(','));
+      }
+
+      // Time range filters
+      if (filters.timeRange) {
+        if (filters.timeRange.min) {
+          params.set('minTime', filters.timeRange.min.toString());
+        }
+        if (filters.timeRange.max) {
+          params.set('maxTime', filters.timeRange.max.toString());
+        }
+      }
+
+      const response = await fetch(`/api/recipes?${params.toString()}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRecipes(data.recipes || []);
+      }
+    } catch (error) {
+      console.error('Error loading recipes:', error);
+    } finally {
+      setIsLoadingRecipes(false);
+    }
+  };
+
   // Filter recipes based on search and filters
-  const filteredRecipes = sampleRecipes.filter(recipe => {
-    // Search term filter
-    const matchesSearch = searchTerm === "" || 
-      recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.ingredients.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      recipe.cuisine.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Cuisine filter
-    const matchesCuisine = filters.cuisine.length === 0 || filters.cuisine.includes(recipe.cuisine);
-
-    // Dietary filter
-    const matchesDietary = filters.dietary.length === 0 || 
-      filters.dietary.some(diet => recipe.dietary.includes(diet));
-
-    // Difficulty filter
-    const matchesDifficulty = filters.difficulty.length === 0 || filters.difficulty.includes(recipe.difficulty);
-
-    // Time range filter
-    const matchesTime = !filters.timeRange || 
-      ((!filters.timeRange.min || recipe.time >= filters.timeRange.min) && 
-       (!filters.timeRange.max || recipe.time <= filters.timeRange.max));
-
-    // URL filter (saved/loved recipes)
+  const filteredRecipes = recipes.filter(recipe => {
+    // URL filter (saved/loved recipes) - API handles other filters
     let matchesUrlFilter = true;
     if (filterParam === 'saved' && user) {
       matchesUrlFilter = userSavedRecipes.includes(recipe.id);
@@ -175,7 +101,7 @@ function RecipesContent() {
       matchesUrlFilter = userLovedRecipes.includes(recipe.id);
     }
 
-    return matchesSearch && matchesCuisine && matchesDietary && matchesDifficulty && matchesTime && matchesUrlFilter;
+    return matchesUrlFilter;
   });
 
   // Load user's saved and loved recipes when user logs in or filter param changes
@@ -467,7 +393,7 @@ function RecipesContent() {
           {/* Results Summary */}
           <div className="mt-6 flex items-center justify-between text-sm text-gray-600">
             <span>
-              {isLoadingUserData ? 'Loading...' : `Showing ${filteredRecipes.length} ${filterParam ? `${filterParam} ` : ''}recipes`}
+              {isLoadingRecipes ? 'Loading recipes...' : isLoadingUserData ? 'Loading...' : `Showing ${filteredRecipes.length} ${filterParam ? `${filterParam} ` : ''}recipes`}
             </span>
             {!filterParam && (
               <span>

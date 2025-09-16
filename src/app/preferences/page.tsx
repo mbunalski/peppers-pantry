@@ -38,7 +38,8 @@ export default function Preferences() {
     max_cooking_time: 30,
     complexity: 'intermediate',
     allergens: [],
-    favorite_cuisines: []
+    favorite_cuisines: [],
+    meals_per_week: 7
   });
 
   // Redirect if not authenticated
@@ -167,8 +168,8 @@ export default function Preferences() {
               </div>
             </div>
 
-            {/* Budget & Time Constraints */}
-            <div className="grid md:grid-cols-2 gap-8">
+            {/* Budget, Time & Meal Planning Constraints */}
+            <div className="grid md:grid-cols-3 gap-8">
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">Budget per Meal</h2>
                 <div className="space-y-4">
@@ -209,6 +210,28 @@ export default function Preferences() {
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>15 min</span>
                     <span>2+ hours</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-semibold text-gray-900 mb-4">Meals per Week</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <ChefHatIcon className="h-5 w-5 text-gray-400 mr-2" />
+                    <input
+                      type="range"
+                      min="1"
+                      max="14"
+                      value={preferences.meals_per_week}
+                      onChange={(e) => handleRangeChange('meals_per_week', Number(e.target.value))}
+                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                    />
+                    <span className="ml-3 text-lg font-medium text-gray-900">{preferences.meals_per_week} meals</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-500">
+                    <span>1 meal</span>
+                    <span>14 meals</span>
                   </div>
                 </div>
               </div>

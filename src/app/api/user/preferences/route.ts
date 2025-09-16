@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
         max_cooking_time: 30,
         complexity: 'medium',
         allergens: [],
-        favorite_cuisines: []
+        favorite_cuisines: [],
+        meals_per_week: 7
       });
     }
     
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
       max_cooking_time: typeof preferences.max_cooking_time === 'number' ? preferences.max_cooking_time : 30,
       complexity: typeof preferences.complexity === 'string' ? preferences.complexity : 'medium',
       allergens: Array.isArray(preferences.allergens) ? preferences.allergens : [],
-      favorite_cuisines: Array.isArray(preferences.favorite_cuisines) ? preferences.favorite_cuisines : []
+      favorite_cuisines: Array.isArray(preferences.favorite_cuisines) ? preferences.favorite_cuisines : [],
+      meals_per_week: typeof preferences.meals_per_week === 'number' ? preferences.meals_per_week : 7
     };
     
     console.log('Saving preferences for user:', user.id, validPreferences);

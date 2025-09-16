@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     const { listName = 'Want to Make' } = await request.json();
 
     // Save the recipe
-    saveRecipe(user.id, recipeId, listName);
+    await saveRecipe(user.id, recipeId, listName);
 
     return NextResponse.json({
       success: true,
@@ -45,7 +45,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { listName = 'Want to Make' } = await request.json();
 
     // Remove from saved recipes
-    unsaveRecipe(user.id, recipeId, listName);
+    await unsaveRecipe(user.id, recipeId, listName);
 
     return NextResponse.json({
       success: true,
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const listName = searchParams.get('listName') || 'Want to Make';
 
     // Check if recipe is saved
-    const isSaved = isRecipeSaved(user.id, recipeId, listName);
+    const isSaved = await isRecipeSaved(user.id, recipeId, listName);
 
     return NextResponse.json({
       isSaved

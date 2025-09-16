@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '../../../lib/auth';
-import { getUserMealPlan, createMealPlan, clearMealPlan, addRecipeToMealPlan } from '../../../lib/db';
-
-// Sample recipes data - in real app this would come from AWS Lambda
-const sampleRecipes = [
-  { id: 245, title: "Tofu Stir-fry", cuisine: "Asian", dietary: ["vegetarian", "vegan"] },
-  { id: 194, title: "Bolognese Sauce", cuisine: "Italian", dietary: [] },
-  { id: 43, title: "Chicken Alfredo", cuisine: "Italian", dietary: [] },
-  { id: 129, title: "World's Best Lasagna", cuisine: "Italian", dietary: [] },
-  { id: 76, title: "Thai Green Curry", cuisine: "Thai", dietary: ["vegetarian"] },
-  { id: 88, title: "Greek Salad Bowl", cuisine: "Mediterranean", dietary: ["vegetarian"] },
-  { id: 102, title: "Beef Tacos", cuisine: "Mexican", dietary: [] },
-  { id: 156, title: "Quinoa Buddha Bowl", cuisine: "American", dietary: ["vegetarian", "vegan"] }
-];
+import { getUserMealPlan, createMealPlan, clearMealPlan, addRecipeToMealPlan, getAllRecipes, getRecipeById, getUserPreferences } from '../../../lib/db';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const mealPlan = getUserMealPlan(user.id);
+    const mealPlan = await getUserMealPlan(user.id);
     
     if (!mealPlan) {
       return NextResponse.json({ items: [] });
@@ -30,7 +18,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       id: mealPlan.id,
       name: mealPlan.name,
-      items: mealPlan.items.map(item => ({
+      items: (mealPlan.items || []).map(item => ({
         id: item.id,
         day: item.day_of_week,
         meal: item.recipe_title,
@@ -54,36 +42,96 @@ export async function POST(request: NextRequest) {
     const { action, recipeId, dayOfWeek } = await request.json();
     
     if (action === 'generate') {
+      // Get user preferences to determine how many meals to generate
+      const userPrefs = await getUserPreferences(user.id);
+      const mealsPerWeek = userPrefs?.meals_per_week || 7;
+      
       // Get or create meal plan
-      let mealPlan = getUserMealPlan(user.id);
+      let mealPlan = await getUserMealPlan(user.id);
       let mealPlanId: string;
       
       if (mealPlan) {
         // Clear existing meal plan
-        clearMealPlan(mealPlan.id);
+        await clearMealPlan(mealPlan.id);
         mealPlanId = mealPlan.id;
       } else {
         // Create new meal plan
-        mealPlanId = createMealPlan(user.id, 'Weekly Meal Plan');
+        mealPlanId = await createMealPlan(user.id, 'Weekly Meal Plan');
       }
       
-      // Generate a new meal plan with sample recipes
+      // Get random recipes from database for meal plan generation
+      const allRecipes = await getAllRecipes();
+
+      if (allRecipes.length === 0) {
+        return NextResponse.json({ error: 'No recipes available for meal planning' }, { status: 400 });
+      }
+
+      // Filter recipes based on user preferences if available
+      let availableRecipes = allRecipes;
+      if (userPrefs) {
+        availableRecipes = allRecipes.filter(recipe => {
+          // Filter by dietary restrictions
+          if (userPrefs.dietary_restrictions && userPrefs.dietary_restrictions.length > 0) {
+            const recipeTags = recipe.tags || [];
+            const recipeTagsLower = recipeTags.map(t => t.toLowerCase());
+
+            // Check if recipe matches dietary restrictions
+            const matchesDietary = userPrefs.dietary_restrictions.some(diet => {
+              if (diet === 'vegetarian') {
+                return recipeTagsLower.includes('vegetarian') || recipeTagsLower.includes('veggie');
+              }
+              if (diet === 'vegan') {
+                return recipeTagsLower.includes('vegan');
+              }
+              if (diet === 'gluten-free') {
+                return recipeTagsLower.includes('gluten-free') || recipeTagsLower.includes('gluten free');
+              }
+              return recipeTagsLower.includes(diet.toLowerCase());
+            });
+
+            // For omnivore, include everything
+            if (userPrefs.dietary_restrictions.includes('omnivore')) {
+              return true;
+            }
+
+            return matchesDietary;
+          }
+
+          // Filter by cooking time if specified
+          if (userPrefs.max_cooking_time && recipe.total_time_minutes) {
+            return recipe.total_time_minutes <= userPrefs.max_cooking_time;
+          }
+
+          return true;
+        });
+      }
+
+      // If filtering resulted in too few recipes, use all recipes
+      if (availableRecipes.length < mealsPerWeek) {
+        availableRecipes = allRecipes;
+      }
+
+      // Shuffle and select recipes
+      const shuffledRecipes = [...availableRecipes].sort(() => Math.random() - 0.5);
       const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      const shuffledRecipes = [...sampleRecipes].sort(() => Math.random() - 0.5);
-      
-      days.forEach((day, index) => {
-        const recipe = shuffledRecipes[index % shuffledRecipes.length];
-        addRecipeToMealPlan(mealPlanId, recipe.id, recipe.title, day);
-      });
+
+      // Add recipes to specific days based on user preference
+      const mealsToGenerate = Math.min(mealsPerWeek, days.length);
+
+      for (let i = 0; i < mealsToGenerate; i++) {
+        const day = days[i]; // Always use specific days for generation
+        const recipe = shuffledRecipes[i % shuffledRecipes.length];
+        await addRecipeToMealPlan(mealPlanId, parseInt(recipe.id), recipe.title, day);
+      }
       
       // Return the new meal plan
-      const newMealPlan = getUserMealPlan(user.id);
+      const newMealPlan = await getUserMealPlan(user.id);
       return NextResponse.json({
         success: true,
         mealPlan: {
           id: newMealPlan!.id,
           name: newMealPlan!.name,
-          items: newMealPlan!.items.map(item => ({
+          items: (newMealPlan!.items || []).map(item => ({
             id: item.id,
             day: item.day_of_week,
             meal: item.recipe_title,
@@ -94,21 +142,21 @@ export async function POST(request: NextRequest) {
       
     } else if (action === 'add' && recipeId && dayOfWeek) {
       // Add a specific recipe to meal plan
-      let mealPlan = getUserMealPlan(user.id);
+      let mealPlan = await getUserMealPlan(user.id);
       let mealPlanId: string;
       
       if (!mealPlan) {
-        mealPlanId = createMealPlan(user.id, 'My Meal Plan');
+        mealPlanId = await createMealPlan(user.id, 'My Meal Plan');
       } else {
         mealPlanId = mealPlan.id;
       }
       
-      const recipe = sampleRecipes.find(r => r.id === recipeId);
+      const recipe = await getRecipeById(recipeId);
       if (!recipe) {
         return NextResponse.json({ error: 'Recipe not found' }, { status: 404 });
       }
-      
-      addRecipeToMealPlan(mealPlanId, recipe.id, recipe.title, dayOfWeek);
+
+      await addRecipeToMealPlan(mealPlanId, parseInt(recipe.id), recipe.title, dayOfWeek);
       
       return NextResponse.json({ success: true, message: 'Recipe added to meal plan' });
     }

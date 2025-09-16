@@ -209,45 +209,48 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
   };
 
   const generateActivitySummary = (item: FeedItem) => {
-    const { recentReactions, recentComments, reactions, commentCount } = item.social;
+    const { recentReactions, recentComments, reactions, commentCount } = item.social as any;
     
-    // Create activity summary like "bun, steve, and 37 others loved this"
     const totalReactions = reactions.love + reactions.like + reactions.vomit;
-    let summary = '';
-
-    if (totalReactions > 0 && recentReactions.length > 0) {
-      const reactionUsers = recentReactions.slice(0, 3).map(r => r.name);
-      const remainingCount = totalReactions - recentReactions.slice(0, 3).length;
+    const hasReactions = totalReactions > 0;
+    const hasComments = commentCount > 0;
+    
+    let summaryParts = [];
+    
+    if (hasReactions && recentReactions.length > 0) {
+      // Reactions summary
+      const reactionUsers = recentReactions.slice(0, 3).map((r: any) => r.name);
+      const remainingCount = Math.max(0, totalReactions - 3);
       
       if (reactionUsers.length === 1) {
-        summary = `${reactionUsers[0]} ${getReactionVerb(recentReactions[0].reaction_type)} this`;
+        summaryParts.push(`${reactionUsers[0]} reacted`);
       } else if (reactionUsers.length === 2) {
-        summary = `${reactionUsers[0]} and ${reactionUsers[1]} ${getReactionVerb(recentReactions[0].reaction_type)} this`;
+        summaryParts.push(`${reactionUsers[0]} and ${reactionUsers[1]} reacted`);
       } else {
         const others = remainingCount > 0 ? ` and ${remainingCount} others` : '';
-        summary = `${reactionUsers.slice(0, 2).join(', ')}${others} ${getReactionVerb(recentReactions[0].reaction_type)} this`;
+        summaryParts.push(`${reactionUsers.slice(0, 2).join(', ')}${others} reacted`);
       }
+    }
+    
+    if (hasComments) {
+      // Comments summary - get unique users who commented
+      const allCommentUsers = recentComments.map((c: any) => c.user_name).filter((name: string) => name);
+      const uniqueCommentUsers = [...new Set(allCommentUsers)]; // Remove duplicates
       
-      if (commentCount > 0) {
-        summary += ` • ${commentCount} comment${commentCount > 1 ? 's' : ''}`;
-      }
-    } else if (commentCount > 0) {
-      if (recentComments.length > 0) {
-        const commentUsers = recentComments.slice(0, 2).map(c => c.name);
-        const remainingComments = commentCount - 2;
-        
-        if (commentUsers.length === 1) {
-          summary = `${commentUsers[0]} commented`;
-        } else {
-          const others = remainingComments > 0 ? ` and ${remainingComments} others` : '';
-          summary = `${commentUsers.join(', ')}${others} commented`;
-        }
+      if (uniqueCommentUsers.length === 1) {
+        summaryParts.push(`${uniqueCommentUsers[0]} commented`);
+      } else if (uniqueCommentUsers.length === 2) {
+        summaryParts.push(`${uniqueCommentUsers[0]} and ${uniqueCommentUsers[1]} commented`);
+      } else if (uniqueCommentUsers.length > 2) {
+        const remainingUsers = uniqueCommentUsers.length - 2;
+        summaryParts.push(`${uniqueCommentUsers.slice(0, 2).join(', ')} and ${remainingUsers} others commented`);
       } else {
-        summary = `${commentCount} comment${commentCount > 1 ? 's' : ''}`;
+        // Fallback if no comment user names are available
+        summaryParts.push(`${commentCount} comment${commentCount > 1 ? 's' : ''}`);
       }
     }
 
-    return summary || 'New recipe activity';
+    return summaryParts.join('. ') || 'New recipe activity';
   };
 
   const getReactionVerb = (reactionType: string) => {
@@ -264,7 +267,7 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
     if (max === 0) return '👥';
     if (reactions.love === max) return '❤️';
     if (reactions.like === max) return '👍';
-    return '🤮';
+    return '🤮';  // Keep consistent with recipe pages
   };
 
   const formatTimeAgo = (dateString: string) => {

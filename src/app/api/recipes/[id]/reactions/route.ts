@@ -27,11 +27,11 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Add or update the reaction
-    addOrUpdateReaction(user.id, recipeId, reactionType);
+    await addOrUpdateReaction(user.id, recipeId, reactionType);
 
     // Get updated reaction counts
-    const reactions = getRecipeReactions(recipeId);
-    const userReaction = getUserReactionForRecipe(user.id, recipeId);
+    const reactions = await getRecipeReactions(recipeId);
+    const userReaction = await getUserReactionForRecipe(user.id, recipeId);
 
     // TODO: Create notification for recipe owner when we have recipe ownership
     // For now, skip notifications since recipes are platform-owned
@@ -62,11 +62,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     // Remove the reaction
-    removeReaction(user.id, recipeId);
+    await removeReaction(user.id, recipeId);
 
     // Get updated reaction counts
-    const reactions = getRecipeReactions(recipeId);
-    const userReaction = getUserReactionForRecipe(user.id, recipeId);
+    const reactions = await getRecipeReactions(recipeId);
+    const userReaction = await getUserReactionForRecipe(user.id, recipeId);
 
     return NextResponse.json({
       success: true,
@@ -89,13 +89,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Get reaction counts
-    const reactions = getRecipeReactions(recipeId);
+    const reactions = await getRecipeReactions(recipeId);
     
     // Get user's reaction if authenticated
     let userReaction = null;
     const user = getUserFromRequest(request);
     if (user) {
-      userReaction = getUserReactionForRecipe(user.id, recipeId);
+      userReaction = await getUserReactionForRecipe(user.id, recipeId);
     }
 
     return NextResponse.json({

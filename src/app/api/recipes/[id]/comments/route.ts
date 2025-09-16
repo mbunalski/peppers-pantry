@@ -25,10 +25,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     }
 
     // Add the comment
-    const commentId = addComment(user.id, recipeId, content.trim(), imageUrl, parentCommentId);
+    const commentId = await addComment(user.id, recipeId, content.trim(), imageUrl, parentCommentId);
 
     // Get updated comments
-    const comments = getRecipeComments(recipeId);
+    const comments = await getRecipeComments(recipeId);
 
     // TODO: Create notification for recipe owner and parent comment author
     // For now, skip notifications since recipes are platform-owned
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Get comments for this recipe
-    const comments = getRecipeComments(recipeId);
+    const comments = await getRecipeComments(recipeId);
 
     return NextResponse.json({
       comments

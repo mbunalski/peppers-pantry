@@ -86,44 +86,16 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const user = getUserFromRequest(request);
-    const { getDb } = await import('../../../lib/db');
-    const db = getDb();
+    const { getActivityFeed, getUserReactionForRecipe, getRecentReactionsForRecipe } = await import('../../../lib/db');
 
-    // Get recipes that have recent activity, grouped by recipe
-    let activityQuery = '';
-    let params: any[] = [];
-
-    if (feedType === 'friends' && user) {
-      activityQuery = `
-        SELECT 
-          a.recipe_id,
-          MAX(a.created_at) as latest_activity,
-          GROUP_CONCAT(DISTINCT u.name || '|' || a.activity_type || '|' || COALESCE(a.metadata, '')) as activities
-        FROM activity_feed a
-        JOIN users u ON a.user_id = u.id
-        JOIN user_follows f ON a.user_id = f.following_id
-        WHERE f.follower_id = ?
-        GROUP BY a.recipe_id
-        ORDER BY latest_activity DESC
-        LIMIT ? OFFSET ?
-      `;
-      params = [user.id, limit, offset];
+    // Get aggregated activity feed 
+    let activityResults;
+    if (feedType === 'global') {
+      activityResults = await getActivityFeed(undefined, limit, offset);
     } else {
-      activityQuery = `
-        SELECT 
-          a.recipe_id,
-          MAX(a.created_at) as latest_activity,
-          GROUP_CONCAT(DISTINCT u.name || '|' || a.activity_type || '|' || COALESCE(a.metadata, '')) as activities
-        FROM activity_feed a
-        JOIN users u ON a.user_id = u.id
-        GROUP BY a.recipe_id
-        ORDER BY latest_activity DESC
-        LIMIT ? OFFSET ?
-      `;
-      params = [limit, offset];
+      // For user-specific or friends feed (simplified for now)
+      activityResults = await getActivityFeed(user?.id, limit, offset);
     }
-
-    const activityResults = db.prepare(activityQuery).all(...params);
 
     // Enhance with recipe data and detailed social info
     const enhancedFeedItems = await Promise.all(
@@ -132,44 +104,32 @@ export async function GET(request: NextRequest) {
         if (!recipe) return null;
 
         // Get detailed social data for this recipe
-        const reactions = getRecipeReactions(item.recipe_id);
-        const comments = getRecipeComments(item.recipe_id);
+        const reactions = await getRecipeReactions(item.recipe_id);
+        const comments = await getRecipeComments(item.recipe_id);
+        const recentReactions = await getRecentReactionsForRecipe(item.recipe_id, 5);
         
         // Get user's reaction if authenticated
         let userReaction = null;
         if (user) {
-          const { getUserReactionForRecipe } = await import('../../../lib/db');
-          userReaction = getUserReactionForRecipe(user.id, item.recipe_id);
+          userReaction = await getUserReactionForRecipe(user.id, item.recipe_id);
         }
 
-        // Parse activities to get recent user actions
-        const activitiesData = item.activities.split(',').map((activity: string) => {
-          const [userName, activityType, metadata] = activity.split('|');
-          return {
-            userName,
-            activityType,
-            metadata: metadata ? JSON.parse(metadata) : null
-          };
-        });
+        // Parse participating users from database array
+        let participatingUsers = [];
+        if (item.participating_users) {
+          // Handle PostgreSQL array format
+          participatingUsers = Array.isArray(item.participating_users) 
+            ? item.participating_users 
+            : item.participating_users.replace(/[{}]/g, '').split(',').filter(name => name.trim());
+        }
 
-        // Get recent reactions and comments
-        const recentReactions = db.prepare(`
-          SELECT u.name, rr.reaction_type, rr.created_at
-          FROM recipe_reactions rr
-          JOIN users u ON rr.user_id = u.id
-          WHERE rr.recipe_id = ?
-          ORDER BY rr.created_at DESC
-          LIMIT 3
-        `).all(item.recipe_id);
-
-        const recentComments = db.prepare(`
-          SELECT u.name, rc.content, rc.created_at
-          FROM recipe_comments rc
-          JOIN users u ON rc.user_id = u.id
-          WHERE rc.recipe_id = ?
-          ORDER BY rc.created_at DESC
-          LIMIT 3
-        `).all(item.recipe_id);
+        // Parse activity types
+        let activityTypes = [];
+        if (item.activity_types) {
+          activityTypes = Array.isArray(item.activity_types) 
+            ? item.activity_types 
+            : item.activity_types.replace(/[{}]/g, '').split(',').filter(type => type.trim());
+        }
 
         return {
           id: `recipe-${item.recipe_id}`,
@@ -188,11 +148,21 @@ export async function GET(request: NextRequest) {
             userReaction,
             commentCount: comments.length,
             totalEngagement: reactions.love + reactions.like + reactions.vomit + comments.length,
-            recentReactions,
-            recentComments,
-            activities: activitiesData
+            recentReactions: recentReactions,
+            recentComments: comments.slice(0, 3),
+            activities: [{
+              userName: item.user_name || 'Unknown',
+              activityType: item.activity_type,
+              metadata: typeof item.metadata === 'string' ? JSON.parse(item.metadata) : item.metadata
+            }],
+            // Additional aggregated data from the new query
+            participatingUsers: participatingUsers,
+            activityTypes: activityTypes,
+            reactionCount: parseInt(item.reaction_count || 0),
+            commentActivityCount: parseInt(item.comment_count || 0),
+            totalActivities: parseInt(item.total_activities || 0)
           },
-          latest_activity: item.latest_activity
+          latest_activity: item.created_at
         };
       })
     );

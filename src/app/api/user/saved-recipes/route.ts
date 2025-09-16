@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const savedRecipes = getUserSavedRecipes(user.id, 'Want to Make');
+    const savedRecipes = await getUserSavedRecipes(user.id, 'Want to Make');
     
     return NextResponse.json({
       success: true,

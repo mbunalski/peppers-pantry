@@ -19,321 +19,12 @@ import {
 import Header from "../../../components/Header";
 import { useAuth } from "../../../contexts/AuthContext";
 
-// Mock recipe data - in a real app, this would be fetched from an API
-const mockRecipeData: { [key: string]: any } = {
-  "245": {
-    id: 245,
-    title: "Tofu Stir-fry",
-    time: 30,
-    servings: 4,
-    difficulty: "Easy",
-    cuisine: "Asian",
-    dietary: ["vegetarian", "vegan"],
-    summary: "Quick and healthy vegetarian stir-fry with tofu and fresh vegetables. Perfect for weeknight dinners when you want something nutritious and delicious.",
-    description: "This colorful tofu stir-fry brings together crisp vegetables and protein-rich tofu in a savory sauce. It's an excellent way to get your daily vegetables while enjoying the satisfying textures and flavors of Asian cuisine.",
-    source: "BBC Good Food",
-    url: "https://www.bbcgoodfood.com/recipes/tofu-stir-fry",
-    nutrition: {
-      calories: 320,
-      protein: 18,
-      carbs: 28,
-      fat: 16,
-      fiber: 6
-    },
-    ingredients: [
-      { item: "Extra firm tofu", amount: "1 block (14 oz)", notes: "drained and cubed" },
-      { item: "Soy sauce", amount: "3 tablespoons", notes: "low sodium preferred" },
-      { item: "Honey", amount: "2 tablespoons", notes: "or maple syrup for vegan" },
-      { item: "Fresh broccoli", amount: "2 cups", notes: "cut into florets" },
-      { item: "Carrots", amount: "2 medium", notes: "sliced diagonally" },
-      { item: "Fresh ginger", amount: "1 inch piece", notes: "minced" },
-      { item: "Garlic", amount: "3 cloves", notes: "minced" },
-      { item: "Vegetable oil", amount: "2 tablespoons", notes: "for cooking" },
-      { item: "Sesame oil", amount: "1 teaspoon", notes: "for flavor" },
-      { item: "Green onions", amount: "2 stalks", notes: "sliced" },
-      { item: "Sesame seeds", amount: "1 tablespoon", notes: "for garnish" }
-    ],
-    instructions: [
-      "Press tofu between paper towels to remove excess moisture. Cut into 1-inch cubes.",
-      "Heat vegetable oil in a large skillet or wok over medium-high heat.",
-      "Add tofu cubes and cook for 3-4 minutes per side until golden brown. Remove and set aside.",
-      "In the same pan, add broccoli and carrots. Stir-fry for 3-4 minutes until crisp-tender.",
-      "Add minced ginger and garlic, cook for another 30 seconds until fragrant.",
-      "In a small bowl, whisk together soy sauce, honey, and sesame oil.",
-      "Return tofu to the pan, pour sauce over everything, and toss to combine.",
-      "Cook for 2-3 more minutes until sauce thickens slightly.",
-      "Garnish with green onions and sesame seeds before serving.",
-      "Serve immediately over rice or noodles."
-    ],
-    tips: [
-      "Press tofu for at least 15 minutes for best texture",
-      "Don't overcrowd the pan - cook in batches if necessary",
-      "Keep vegetables crisp for better texture and nutrition",
-      "Substitute vegetables based on what you have available"
-    ]
-  },
-  "194": {
-    id: 194,
-    title: "Bolognese Sauce",
-    time: 120,
-    servings: 6,
-    difficulty: "Medium",
-    cuisine: "Italian",
-    dietary: [],
-    summary: "Classic Italian meat sauce perfect for pasta dishes. Rich, hearty, and full of flavor.",
-    description: "A traditional Bolognese sauce that's simmered for hours to develop deep, complex flavors. This sauce is perfect for pasta, lasagna, or any dish that needs a robust meat sauce.",
-    source: "Serious Eats",
-    url: "https://www.seriouseats.com/best-slow-cooked-bolognese-sauce",
-    nutrition: { calories: 280, protein: 22, carbs: 12, fat: 18, fiber: 3 },
-    ingredients: [
-      { item: "Ground beef", amount: "1 lb", notes: "80/20 blend" },
-      { item: "Crushed tomatoes", amount: "28 oz can", notes: "" },
-      { item: "Yellow onion", amount: "1 large", notes: "diced" },
-      { item: "Garlic", amount: "4 cloves", notes: "minced" },
-      { item: "Red wine", amount: "1/2 cup", notes: "optional" },
-      { item: "Fresh herbs", amount: "2 tbsp", notes: "basil and oregano" }
-    ],
-    instructions: [
-      "Brown the ground beef in a large pot over medium-high heat.",
-      "Add diced onion and cook until softened, about 5 minutes.",
-      "Add minced garlic and cook for 1 minute until fragrant.",
-      "Pour in red wine and let it reduce by half.",
-      "Add crushed tomatoes and herbs, bring to a simmer.",
-      "Reduce heat to low and simmer for 1.5-2 hours, stirring occasionally.",
-      "Season with salt and pepper to taste.",
-      "Serve over your favorite pasta."
-    ],
-    tips: [
-      "Use a mix of ground beef and pork for more flavor",
-      "Let the sauce simmer low and slow for best results",
-      "Add a splash of milk for creaminess",
-      "This sauce freezes well for up to 3 months"
-    ]
-  },
-  "43": {
-    id: 43,
-    title: "Chicken Alfredo",
-    time: 25,
-    servings: 4,
-    difficulty: "Easy",
-    cuisine: "Italian",
-    dietary: [],
-    summary: "Creamy pasta dish with tender chicken and rich alfredo sauce.",
-    description: "A restaurant-quality chicken alfredo made at home with a silky, rich cream sauce that coats every strand of pasta perfectly.",
-    source: "AllRecipes",
-    url: "#",
-    nutrition: { calories: 650, protein: 35, carbs: 45, fat: 38, fiber: 2 },
-    ingredients: [
-      { item: "Chicken breast", amount: "1 lb", notes: "sliced thin" },
-      { item: "Fettuccine pasta", amount: "12 oz", notes: "" },
-      { item: "Heavy cream", amount: "1 cup", notes: "" },
-      { item: "Parmesan cheese", amount: "1 cup", notes: "freshly grated" },
-      { item: "Garlic", amount: "3 cloves", notes: "minced" },
-      { item: "Butter", amount: "4 tbsp", notes: "" }
-    ],
-    instructions: [
-      "Cook pasta according to package directions until al dente.",
-      "Season chicken with salt and pepper, cook in butter until golden.",
-      "Remove chicken and set aside.",
-      "In same pan, add garlic and cook for 30 seconds.",
-      "Pour in cream and bring to a gentle simmer.",
-      "Gradually whisk in Parmesan cheese until smooth.",
-      "Return chicken to pan and toss with drained pasta.",
-      "Serve immediately with extra Parmesan."
-    ],
-    tips: [
-      "Don't let the cream boil or it may curdle",
-      "Use freshly grated Parmesan for best results",
-      "Add pasta water if sauce gets too thick",
-      "Serve immediately while hot"
-    ]
-  },
-  "129": {
-    id: 129,
-    title: "World's Best Lasagna",
-    time: 90,
-    servings: 8,
-    difficulty: "Hard",
-    cuisine: "Italian",
-    dietary: [],
-    summary: "Layered pasta dish with meat sauce, cheese, and bechamel. A true labor of love.",
-    description: "This epic lasagna features layers of pasta, rich meat sauce, creamy ricotta, and melted cheese. It's worth the effort for special occasions.",
-    source: "AllRecipes",
-    url: "#",
-    nutrition: { calories: 520, protein: 28, carbs: 42, fat: 28, fiber: 4 },
-    ingredients: [
-      { item: "Ground beef", amount: "1 lb", notes: "" },
-      { item: "Lasagna noodles", amount: "12 sheets", notes: "" },
-      { item: "Ricotta cheese", amount: "15 oz", notes: "" },
-      { item: "Mozzarella cheese", amount: "2 cups", notes: "shredded" },
-      { item: "Tomato sauce", amount: "24 oz jar", notes: "" }
-    ],
-    instructions: [
-      "Preheat oven to 375°F.",
-      "Cook lasagna noodles according to package directions.",
-      "Brown ground beef and mix with tomato sauce.",
-      "Layer noodles, meat sauce, ricotta, and mozzarella.",
-      "Repeat layers twice more.",
-      "Cover with foil and bake for 45 minutes.",
-      "Remove foil and bake 15 more minutes until golden.",
-      "Let rest 15 minutes before serving."
-    ],
-    tips: [
-      "Let it rest before cutting for clean slices",
-      "Can be assembled ahead and refrigerated",
-      "Freezes well for up to 3 months",
-      "Cover with foil to prevent over-browning"
-    ]
-  },
-  "76": {
-    id: 76,
-    title: "Thai Green Curry",
-    time: 45,
-    servings: 4,
-    difficulty: "Medium",
-    cuisine: "Thai",
-    dietary: ["vegetarian"],
-    summary: "Aromatic curry with coconut milk and fresh vegetables.",
-    description: "An authentic Thai green curry that's creamy, spicy, and full of fresh vegetables. Perfectly balanced with coconut milk and aromatic spices.",
-    source: "Thai Kitchen",
-    url: "#",
-    nutrition: { calories: 280, protein: 8, carbs: 24, fat: 18, fiber: 6 },
-    ingredients: [
-      { item: "Green curry paste", amount: "3 tbsp", notes: "" },
-      { item: "Coconut milk", amount: "14 oz can", notes: "" },
-      { item: "Mixed vegetables", amount: "3 cups", notes: "bell peppers, eggplant, bamboo shoots" },
-      { item: "Thai basil", amount: "1/4 cup", notes: "fresh leaves" },
-      { item: "Lime juice", amount: "2 tbsp", notes: "" }
-    ],
-    instructions: [
-      "Heat 1/4 cup coconut cream in a large pan.",
-      "Add curry paste and fry until fragrant.",
-      "Add remaining coconut milk and bring to simmer.",
-      "Add vegetables and cook until tender.",
-      "Stir in Thai basil and lime juice.",
-      "Serve over jasmine rice."
-    ],
-    tips: [
-      "Use thick coconut cream for frying curry paste",
-      "Don't overcook vegetables - keep them crisp",
-      "Adjust spice level with more or less curry paste",
-      "Fresh Thai basil makes a big difference"
-    ]
-  },
-  "88": {
-    id: 88,
-    title: "Greek Salad Bowl",
-    time: 15,
-    servings: 2,
-    difficulty: "Easy",
-    cuisine: "Mediterranean",
-    dietary: ["vegetarian"],
-    summary: "Fresh Mediterranean salad with feta and olives.",
-    description: "A vibrant Greek salad with crisp vegetables, creamy feta, and a tangy olive oil dressing. Light, healthy, and full of Mediterranean flavors.",
-    source: "Mediterranean Diet",
-    url: "#",
-    nutrition: { calories: 220, protein: 8, carbs: 12, fat: 18, fiber: 5 },
-    ingredients: [
-      { item: "Cucumber", amount: "1 large", notes: "diced" },
-      { item: "Cherry tomatoes", amount: "2 cups", notes: "halved" },
-      { item: "Feta cheese", amount: "4 oz", notes: "crumbled" },
-      { item: "Kalamata olives", amount: "1/2 cup", notes: "pitted" },
-      { item: "Red onion", amount: "1/4 cup", notes: "sliced thin" },
-      { item: "Olive oil", amount: "3 tbsp", notes: "extra virgin" }
-    ],
-    instructions: [
-      "Combine cucumber, tomatoes, and red onion in a bowl.",
-      "Add olives and crumbled feta cheese.",
-      "Drizzle with olive oil and lemon juice.",
-      "Season with oregano, salt, and pepper.",
-      "Toss gently to combine.",
-      "Let sit for 10 minutes before serving."
-    ],
-    tips: [
-      "Use the best quality olive oil you can find",
-      "Don't overdress the salad",
-      "Add herbs like oregano and parsley",
-      "Serve at room temperature for best flavor"
-    ]
-  },
-  "102": {
-    id: 102,
-    title: "Beef Tacos",
-    time: 35,
-    servings: 4,
-    difficulty: "Easy",
-    cuisine: "Mexican",
-    dietary: [],
-    summary: "Seasoned ground beef tacos with fresh toppings.",
-    description: "Classic beef tacos with perfectly seasoned ground beef and all your favorite toppings. A family-friendly meal that's quick and delicious.",
-    source: "Mexican Cooking",
-    url: "#",
-    nutrition: { calories: 380, protein: 24, carbs: 28, fat: 20, fiber: 4 },
-    ingredients: [
-      { item: "Ground beef", amount: "1 lb", notes: "80/20" },
-      { item: "Taco seasoning", amount: "1 packet", notes: "or homemade" },
-      { item: "Corn tortillas", amount: "8 small", notes: "" },
-      { item: "Lettuce", amount: "2 cups", notes: "shredded" },
-      { item: "Cheddar cheese", amount: "1 cup", notes: "shredded" },
-      { item: "Tomatoes", amount: "2 medium", notes: "diced" }
-    ],
-    instructions: [
-      "Brown ground beef in a large skillet.",
-      "Drain fat and add taco seasoning with water.",
-      "Simmer until sauce thickens.",
-      "Warm tortillas in microwave or pan.",
-      "Fill tortillas with meat and toppings.",
-      "Serve with salsa and sour cream."
-    ],
-    tips: [
-      "Make your own taco seasoning for better flavor",
-      "Warm tortillas for better texture",
-      "Set up a taco bar for family dinners",
-      "Try different toppings like avocado or cilantro"
-    ]
-  },
-  "156": {
-    id: 156,
-    title: "Quinoa Buddha Bowl",
-    time: 40,
-    servings: 2,
-    difficulty: "Medium",
-    cuisine: "American",
-    dietary: ["vegetarian", "vegan"],
-    summary: "Nutritious bowl with quinoa, roasted vegetables, and tahini dressing.",
-    description: "A colorful, nutrient-packed bowl featuring protein-rich quinoa, roasted vegetables, and a creamy tahini dressing. Perfect for healthy eating.",
-    source: "Healthy Eats",
-    url: "#",
-    nutrition: { calories: 420, protein: 16, carbs: 58, fat: 16, fiber: 12 },
-    ingredients: [
-      { item: "Quinoa", amount: "1 cup", notes: "uncooked" },
-      { item: "Sweet potato", amount: "1 large", notes: "cubed" },
-      { item: "Chickpeas", amount: "1 can", notes: "drained and rinsed" },
-      { item: "Baby spinach", amount: "2 cups", notes: "" },
-      { item: "Tahini", amount: "3 tbsp", notes: "" },
-      { item: "Lemon juice", amount: "2 tbsp", notes: "" }
-    ],
-    instructions: [
-      "Cook quinoa according to package directions.",
-      "Roast sweet potato cubes at 400°F for 25 minutes.",
-      "Toss chickpeas with oil and roast for 20 minutes.",
-      "Make dressing by whisking tahini with lemon juice.",
-      "Assemble bowls with quinoa, vegetables, and chickpeas.",
-      "Drizzle with tahini dressing and serve."
-    ],
-    tips: [
-      "Rinse quinoa before cooking to remove bitterness",
-      "Roast vegetables until golden for best flavor",
-      "Add water to tahini dressing if too thick",
-      "Customize with your favorite vegetables"
-    ]
-  }
-};
-
 export default function RecipePage() {
   const { user, token } = useAuth();
   const params = useParams();
   const recipeId = params.id as string;
+  const [recipe, setRecipe] = useState<any>(null);
+  const [isLoadingRecipe, setIsLoadingRecipe] = useState(true);
   const [reactions, setReactions] = useState({ love: 0, like: 0, vomit: 0 });
   const [userReaction, setUserReaction] = useState<'love' | 'like' | 'vomit' | null>(null);
   const [isSaved, setIsSaved] = useState(false);
@@ -342,10 +33,13 @@ export default function RecipePage() {
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  
-  const recipe = mockRecipeData[recipeId];
 
-  // Load reactions when component mounts
+  // Load recipe data
+  useEffect(() => {
+    loadRecipe();
+  }, [recipeId]);
+
+  // Load reactions and comments when recipe is loaded
   useEffect(() => {
     if (recipe) {
       loadReactions();
@@ -355,6 +49,26 @@ export default function RecipePage() {
       }
     }
   }, [recipe, user]);
+
+  const loadRecipe = async () => {
+    setIsLoadingRecipe(true);
+    try {
+      const response = await fetch(`/api/recipes/${recipeId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRecipe(data.recipe);
+      } else {
+        setRecipe(null);
+      }
+    } catch (error) {
+      console.error('Error loading recipe:', error);
+      setRecipe(null);
+    } finally {
+      setIsLoadingRecipe(false);
+    }
+  };
+
+
 
   const loadReactions = async () => {
     try {
@@ -545,6 +259,21 @@ export default function RecipePage() {
       return `${diffInDays}d ago`;
     }
   };
+
+  // Loading state
+  if (isLoadingRecipe) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading recipe...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If recipe not found, show error
   if (!recipe) {
