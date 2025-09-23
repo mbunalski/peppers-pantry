@@ -36,7 +36,7 @@ export default function Header() {
 
               {user ? (
                 <div className="flex items-center space-x-3">
-                  <Link href={`/user/${user.id}`} className="flex items-center text-gray-700 hover:text-red-600 dark:text-gray-200 dark:hover:text-red-400 transition-colors">
+                  <Link href="/dashboard" className="flex items-center text-gray-700 hover:text-red-600 dark:text-gray-200 dark:hover:text-red-400 transition-colors">
                     <UserIcon className="h-5 w-5 mr-1" />
                     <span className="text-sm font-medium">{user.name}</span>
                   </Link>

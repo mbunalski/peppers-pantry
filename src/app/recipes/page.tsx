@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChefHatIcon, ClockIcon, UsersIcon, ExternalLinkIcon, SearchIcon, FilterIcon, XIcon, LockIcon } from "lucide-react";
-import Header from "../../components/Header";
+import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 
 
@@ -204,8 +204,7 @@ function RecipesContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <Layout>
 
       {/* Hero Section */}
       <div className="bg-white">
@@ -217,7 +216,7 @@ function RecipesContent() {
             <p className="mt-4 text-xl text-gray-500 max-w-3xl mx-auto">
               {filterParam === 'saved' ? 'Your saved recipes' : 
                filterParam === 'loved' ? 'Recipes you loved' :
-               'Browse our curated collection of 121+ recipes from top food websites. Each recipe is available via SMS - just text the recipe ID to get full details!'}
+               'Browse our curated collection of 100\'s of recipes from top food websites. Each recipe is available via SMS - just text the recipe ID to get full details!'}
             </p>
           </div>
         </div>
@@ -397,7 +396,7 @@ function RecipesContent() {
             </span>
             {!filterParam && (
               <span>
-                From our collection of 121+ curated recipes
+                From our collection of 100's of curated recipes
               </span>
             )}
           </div>
@@ -409,6 +408,27 @@ function RecipesContent() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredRecipes.map((recipe) => (
             <div key={recipe.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
+              {/* Recipe Image */}
+              <div className="aspect-w-16 aspect-h-9 bg-gray-200">
+                {recipe.image_url ? (
+                  <img
+                    src={recipe.image_url}
+                    alt={recipe.title}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <div className={`${recipe.image_url ? 'hidden' : ''} w-full h-48 bg-gray-100 flex items-center justify-center`}>
+                  <div className="text-center">
+                    <ChefHatIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No image available</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Recipe Header */}
               <div className="p-6">
                 <div className="flex items-start justify-between">
@@ -416,9 +436,6 @@ function RecipesContent() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       {recipe.title}
                     </h3>
-                    <p className="text-sm text-gray-500 mb-3">
-                      {recipe.summary}
-                    </p>
                   </div>
                   <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
                     ID: {recipe.id}
@@ -532,7 +549,7 @@ function RecipesContent() {
           </div>
         </div>
       </footer>
-    </div>
+    </Layout>
   );
 }
 

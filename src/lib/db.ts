@@ -64,6 +64,15 @@ async function initializeSchema(): Promise<void> {
       ALTER TABLE user_preferences
       ADD COLUMN IF NOT EXISTS meals_per_week INTEGER DEFAULT 7
     `);
+
+    // Add S3 image URL columns to recipes table
+    await pool.query(`
+      ALTER TABLE recipes
+      ADD COLUMN IF NOT EXISTS s3_thumbnail_url TEXT,
+      ADD COLUMN IF NOT EXISTS s3_medium_url TEXT,
+      ADD COLUMN IF NOT EXISTS s3_large_url TEXT,
+      ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    `);
     
     // Create meal plans table
     await pool.query(`
@@ -743,7 +752,10 @@ export async function getAllRecipes(limit?: number, offset?: number): Promise<an
         macros,
         tags,
         author,
-        image_url
+        image_url,
+        s3_thumbnail_url,
+        s3_medium_url,
+        s3_large_url
       FROM recipes
       ORDER BY id ASC
     `;
@@ -790,7 +802,10 @@ export async function searchRecipes(searchTerm: string, filters?: {
         macros,
         tags,
         author,
-        image_url
+        image_url,
+        s3_thumbnail_url,
+        s3_medium_url,
+        s3_large_url
       FROM recipes
       WHERE 1=1
     `;
@@ -878,6 +893,44 @@ export async function getRecipeById(id: number): Promise<any | null> {
     return result.rows[0] || null;
   } catch (error) {
     console.error('Error getting recipe by ID:', error);
+    throw error;
+  }
+}
+
+export async function updateRecipeImageUrl(recipeId: number, imageUrl: string): Promise<void> {
+  const db = await getDb();
+
+  try {
+    await db.query(`
+      UPDATE recipes
+      SET image_url = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+    `, [imageUrl, recipeId]);
+
+    console.log(`Updated image URL for recipe ${recipeId}: ${imageUrl}`);
+  } catch (error) {
+    console.error('Error updating recipe image URL:', error);
+    throw error;
+  }
+}
+
+export async function getRecipesWithoutImages(limit: number = 50): Promise<Array<{id: number, source_url: string}>> {
+  const db = await getDb();
+
+  try {
+    const result = await db.query(`
+      SELECT id, source_url
+      FROM recipes
+      WHERE (image_url IS NULL OR image_url = '')
+        AND source_url IS NOT NULL
+        AND source_url != '#'
+      ORDER BY id
+      LIMIT $1
+    `, [limit]);
+
+    return result.rows;
+  } catch (error) {
+    console.error('Error getting recipes without images:', error);
     throw error;
   }
 }
@@ -1063,17 +1116,56 @@ export async function getUserShoppingList(userId: string | number, mealPlanId?: 
 
 export async function createShoppingList(userId: string | number, items: any[], mealPlanId?: string | number, name: string = 'Shopping List'): Promise<string> {
   const db = await getDb();
-  
+
   try {
     const result = await db.query(`
       INSERT INTO shopping_lists (user_id, meal_plan_id, name, items)
       VALUES ($1, $2, $3, $4)
       RETURNING id
     `, [userId, mealPlanId || null, name, JSON.stringify(items)]);
-    
+
     return result.rows[0].id.toString();
   } catch (error) {
     console.error('Error creating shopping list:', error);
+    throw error;
+  }
+}
+
+// Shopping list item management
+export async function updateShoppingListItem(
+  shoppingListId: string | number,
+  itemIndex: number,
+  updatedItem: ShoppingItem
+): Promise<void> {
+  const db = await getDb();
+
+  try {
+    await db.query(`
+      UPDATE shopping_lists
+      SET items = jsonb_set(items, $2, $3::jsonb, false)
+      WHERE id = $1
+    `, [shoppingListId, `{${itemIndex}}`, JSON.stringify(updatedItem)]);
+  } catch (error) {
+    console.error('Error updating shopping list item:', error);
+    throw error;
+  }
+}
+
+export async function deleteShoppingListItem(
+  shoppingListId: string | number,
+  itemIndex: number
+): Promise<void> {
+  const db = await getDb();
+
+  try {
+    // Remove item at specific index
+    await db.query(`
+      UPDATE shopping_lists
+      SET items = items - $2
+      WHERE id = $1
+    `, [shoppingListId, itemIndex]);
+  } catch (error) {
+    console.error('Error deleting shopping list item:', error);
     throw error;
   }
 }

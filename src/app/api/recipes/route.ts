@@ -44,7 +44,11 @@ export async function GET(request: NextRequest) {
       url: recipe.source_url || '#',
       calories: recipe.calories,
       macros: recipe.macros,
-      image: recipe.image_url,
+      // Prioritize S3 URLs over external URLs
+      image_url: recipe.s3_medium_url || recipe.image_url,
+      s3_thumbnail_url: recipe.s3_thumbnail_url,
+      s3_medium_url: recipe.s3_medium_url,
+      s3_large_url: recipe.s3_large_url,
       author: recipe.author
     }));
 

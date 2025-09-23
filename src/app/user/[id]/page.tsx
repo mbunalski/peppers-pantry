@@ -15,7 +15,7 @@ import {
   ChefHatIcon,
   ShoppingCartIcon
 } from "lucide-react";
-import Header from "../../../components/Header";
+import Layout from "../../../components/Layout";
 import { useAuth } from "../../../contexts/AuthContext";
 
 interface UserProfile {
@@ -58,10 +58,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
   }, [params]);
 
   useEffect(() => {
-    if (userId) {
+    if (userId && user) {
+      // If user is viewing their own profile, redirect to dashboard
+      if (userId === user.id) {
+        router.push('/dashboard');
+        return;
+      }
+      loadProfile();
+    } else if (userId) {
       loadProfile();
     }
-  }, [userId, token]);
+  }, [userId, token, user, router]);
 
   const loadProfile = async () => {
     if (!userId) return;
@@ -164,22 +171,20 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <Layout>
         <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading profile...</p>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <Layout>
         <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <UserIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -193,14 +198,12 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
             </Link>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-
+    <Layout>
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Profile Header */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
@@ -366,6 +369,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

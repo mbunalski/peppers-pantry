@@ -16,7 +16,7 @@ import {
   ExternalLinkIcon,
   LockIcon
 } from "lucide-react";
-import Header from "../../../components/Header";
+import Layout from "../../../components/Layout";
 import { useAuth } from "../../../contexts/AuthContext";
 
 export default function RecipePage() {
@@ -263,15 +263,14 @@ export default function RecipePage() {
   // Loading state
   if (isLoadingRecipe) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <Layout>
         <div className="flex items-center justify-center pt-20">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading recipe...</p>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -305,10 +304,22 @@ export default function RecipePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-
+    <Layout>
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Recipe Hero Image */}
+        {recipe.image_url && (
+          <div className="mb-8 rounded-lg overflow-hidden shadow-sm">
+            <img
+              src={recipe.image_url}
+              alt={recipe.title}
+              className="w-full h-64 md:h-80 object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+
         {/* Recipe Header */}
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
           <div className="flex items-start justify-between mb-6">
@@ -748,6 +759,6 @@ export default function RecipePage() {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

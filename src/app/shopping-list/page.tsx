@@ -3,16 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ChefHatIcon, 
-  ShoppingCartIcon, 
-  CheckIcon, 
-  CopyIcon, 
-  ShareIcon, 
+import {
+  ChefHatIcon,
+  ShoppingCartIcon,
+  CheckIcon,
+  CopyIcon,
+  ShareIcon,
   PrinterIcon,
-  CalendarIcon 
+  CalendarIcon,
+  EditIcon,
+  TrashIcon,
+  SaveIcon,
+  XIcon
 } from "lucide-react";
-import Header from "../../components/Header";
+import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 
 interface ShoppingItem {
@@ -35,6 +39,8 @@ export default function ShoppingList() {
   const [isLoading, setIsLoading] = useState(true);
   const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({});
   const [copySuccess, setCopySuccess] = useState(false);
+  const [editingItem, setEditingItem] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState({ ingredient: '', amount: '', category: '' });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -141,6 +147,89 @@ export default function ShoppingList() {
     window.print();
   };
 
+  const handleEditItem = (itemIndex: number) => {
+    if (!shoppingList) return;
+    const item = shoppingList.items[itemIndex];
+    setEditForm({
+      ingredient: item.ingredient,
+      amount: item.amount,
+      category: item.category
+    });
+    setEditingItem(itemIndex);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!shoppingList || editingItem === null) return;
+
+    try {
+      const response = await fetch('/api/shopping-list', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          shoppingListId: shoppingList.id,
+          itemIndex: editingItem,
+          updatedItem: editForm
+        })
+      });
+
+      if (response.ok) {
+        // Update local state
+        const updatedItems = [...shoppingList.items];
+        updatedItems[editingItem] = editForm;
+        setShoppingList({ ...shoppingList, items: updatedItems });
+        setEditingItem(null);
+        setEditForm({ ingredient: '', amount: '', category: '' });
+      }
+    } catch (error) {
+      console.error('Error updating item:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setEditForm({ ingredient: '', amount: '', category: '' });
+  };
+
+  const handleDeleteItem = async (itemIndex: number) => {
+    if (!shoppingList) return;
+
+    if (!confirm('Delete this item from your shopping list?')) return;
+
+    try {
+      const response = await fetch('/api/shopping-list', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          shoppingListId: shoppingList.id,
+          itemIndex: itemIndex
+        })
+      });
+
+      if (response.ok) {
+        // Update local state
+        const updatedItems = shoppingList.items.filter((_, index) => index !== itemIndex);
+        setShoppingList({ ...shoppingList, items: updatedItems });
+
+        // Update checked items state
+        const newCheckedItems: { [key: string]: boolean } = {};
+        updatedItems.forEach((_, index) => {
+          const oldKey = `${shoppingList.id}-${index >= itemIndex ? index + 1 : index}`;
+          const newKey = `${shoppingList.id}-${index}`;
+          newCheckedItems[newKey] = checkedItems[oldKey] || false;
+        });
+        setCheckedItems(newCheckedItems);
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -151,22 +240,20 @@ export default function ShoppingList() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <Layout>
         <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading your shopping lists...</p>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (!shoppingList) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <Layout>
         <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <ShoppingCartIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -190,13 +277,12 @@ export default function ShoppingList() {
             </div>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <Layout>
 
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -278,21 +364,83 @@ export default function ShoppingList() {
                       <button
                         onClick={() => handleItemCheck(shoppingList.id, originalIndex)}
                         className={`flex items-center justify-center w-6 h-6 rounded-full border-2 transition-colors ${
-                          isChecked 
-                            ? 'bg-green-500 border-green-500 text-white' 
+                          isChecked
+                            ? 'bg-green-500 border-green-500 text-white'
                             : 'border-gray-300 hover:border-green-500'
                         }`}
                       >
                         {isChecked && <CheckIcon className="h-4 w-4" />}
                       </button>
-                      <div className="ml-4 flex-1">
-                        <span className={`text-base ${isChecked ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                          {item.ingredient}
-                        </span>
-                        <span className={`ml-2 text-sm ${isChecked ? 'line-through text-gray-400' : 'text-gray-600'}`}>
-                          ({item.amount})
-                        </span>
-                      </div>
+
+                      {editingItem === originalIndex ? (
+                        // Edit mode
+                        <div className="ml-4 flex-1 flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={editForm.ingredient}
+                            onChange={(e) => setEditForm({ ...editForm, ingredient: e.target.value })}
+                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Ingredient"
+                          />
+                          <input
+                            type="text"
+                            value={editForm.amount}
+                            onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                            placeholder="Amount"
+                          />
+                          <select
+                            value={editForm.category}
+                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                            className="px-2 py-1 border border-gray-300 rounded text-sm"
+                          >
+                            <option value="Produce">Produce</option>
+                            <option value="Meat & Protein">Meat & Protein</option>
+                            <option value="Dairy">Dairy</option>
+                            <option value="Pantry">Pantry</option>
+                          </select>
+                          <button
+                            onClick={handleSaveEdit}
+                            className="p-1 text-green-600 hover:text-green-700"
+                          >
+                            <SaveIcon className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="p-1 text-gray-600 hover:text-gray-700"
+                          >
+                            <XIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        // View mode
+                        <>
+                          <div className="ml-4 flex-1">
+                            <span className={`text-base ${isChecked ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                              {item.ingredient}
+                            </span>
+                            <span className={`ml-2 text-sm ${isChecked ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+                              ({item.amount})
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-1 ml-2">
+                            <button
+                              onClick={() => handleEditItem(originalIndex)}
+                              className="p-1 text-blue-600 hover:text-blue-700"
+                              title="Edit item"
+                            >
+                              <EditIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(originalIndex)}
+                              className="p-1 text-red-600 hover:text-red-700"
+                              title="Delete item"
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   );
                 })}
@@ -362,6 +510,6 @@ export default function ShoppingList() {
           }
         }
       `}</style>
-    </div>
+    </Layout>
   );
 }

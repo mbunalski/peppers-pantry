@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChefHatIcon, DollarSignIcon, ClockIcon, ChevronRightIcon } from "lucide-react";
-import Header from "../../components/Header";
+import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 
 // Dietary options
@@ -123,9 +123,7 @@ export default function Preferences() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
-      <Header />
-
+    <Layout>
       <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12">
@@ -362,6 +360,6 @@ export default function Preferences() {
           </form>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

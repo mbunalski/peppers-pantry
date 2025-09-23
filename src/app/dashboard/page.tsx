@@ -17,7 +17,7 @@ import {
   TrendingUpIcon,
   EyeIcon
 } from "lucide-react";
-import Header from "../../components/Header";
+import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 
 interface DashboardData {
@@ -86,21 +86,19 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <Layout>
         <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading your dashboard...</p>
           </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <Layout>
 
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Profile Header */}
@@ -354,6 +352,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

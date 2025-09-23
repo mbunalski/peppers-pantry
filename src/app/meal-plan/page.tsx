@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChefHatIcon, CalendarIcon, ShoppingCartIcon, MessageSquareIcon, ClockIcon, DollarSignIcon, LockIcon, PlusIcon, RefreshCwIcon } from "lucide-react";
-import Header from "../../components/Header";
+import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 
 // Sample meal plan data
@@ -249,8 +249,7 @@ export default function MealPlan() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <Layout>
 
       {/* Hero Section */}
       <div className="bg-white">
@@ -620,6 +619,6 @@ export default function MealPlan() {
           </div>
         </div>
       </footer>
-    </div>
+    </Layout>
   );
 }

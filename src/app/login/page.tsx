@@ -164,7 +164,7 @@ export default function Login() {
                 </div>
                 <div className="flex items-center text-xs text-gray-500">
                   <span className="mr-2">👨‍🍳</span>
-                  121+ curated recipes
+                  100's of curated recipes
                 </div>
               </div>
             </div>

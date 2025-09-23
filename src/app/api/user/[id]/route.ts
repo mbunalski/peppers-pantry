@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserFromRequest } from '../../../../lib/auth';
-import { 
-  getGlobalFeed, 
-  getFollowers, 
+import {
+  getGlobalFeed,
+  getFollowers,
   getFollowing,
   isFollowing,
   getUserById,
   getActivityFeed,
   getUserLovedRecipes,
   getUserSavedRecipes,
-  getDb
+  getDb,
+  getRecipeById
 } from '../../../../lib/db';
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
@@ -51,30 +52,44 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       savedRecipesCount = savedRecipesData.length;
     }
 
-    // Sample recipe data to get titles and details
-    const recipeData: { [key: number]: any } = {
-      245: { title: "Tofu Stir-fry", summary: "Quick and healthy vegetarian stir-fry with tofu and fresh vegetables", time: 30, servings: 4, difficulty: "Easy", cuisine: "Asian", dietary: ["vegetarian", "vegan"] },
-      194: { title: "Bolognese Sauce", summary: "Classic Italian meat sauce perfect for pasta dishes", time: 120, servings: 6, difficulty: "Medium", cuisine: "Italian", dietary: [] },
-      43: { title: "Chicken Alfredo", summary: "Creamy pasta dish with tender chicken and rich alfredo sauce", time: 25, servings: 4, difficulty: "Easy", cuisine: "Italian", dietary: [] },
-      129: { title: "World's Best Lasagna", summary: "Layered pasta dish with meat sauce, cheese, and bechamel", time: 90, servings: 8, difficulty: "Hard", cuisine: "Italian", dietary: [] },
-      76: { title: "Thai Green Curry", summary: "Aromatic curry with coconut milk and fresh vegetables", time: 45, servings: 4, difficulty: "Medium", cuisine: "Thai", dietary: ["vegetarian"] },
-      88: { title: "Greek Salad Bowl", summary: "Fresh Mediterranean salad with feta and olives", time: 15, servings: 2, difficulty: "Easy", cuisine: "Mediterranean", dietary: ["vegetarian"] },
-      102: { title: "Beef Tacos", summary: "Seasoned ground beef tacos with fresh toppings", time: 35, servings: 4, difficulty: "Easy", cuisine: "Mexican", dietary: [] },
-      156: { title: "Quinoa Buddha Bowl", summary: "Nutritious bowl with quinoa, roasted vegetables, and tahini dressing", time: 40, servings: 2, difficulty: "Medium", cuisine: "American", dietary: ["vegetarian", "vegan"] }
-    };
+    // Enrich saved recipes with recipe details from database
+    const enrichedSavedRecipes = await Promise.all(
+      savedRecipesData.map(async (saved) => {
+        const recipeData = await getRecipeById(saved.recipe_id);
+        return {
+          ...saved,
+          recipe: recipeData || {
+            title: `Recipe ${saved.recipe_id}`,
+            summary: '',
+            time: 0,
+            servings: 0,
+            difficulty: 'Unknown',
+            cuisine: 'Unknown',
+            dietary: []
+          }
+        };
+      })
+    );
 
-    // Enrich saved recipes with recipe details
-    const enrichedSavedRecipes = savedRecipesData.map(saved => ({
-      ...saved,
-      recipe: recipeData[saved.recipe_id] || { title: `Recipe ${saved.recipe_id}`, summary: '', time: 0, servings: 0, difficulty: 'Unknown', cuisine: 'Unknown', dietary: [] }
-    }));
-
-    // Enrich loved recipes with recipe details
-    const enrichedLovedRecipes = lovedRecipesData.map(loved => ({
-      recipe_id: loved.recipe_id,
-      created_at: loved.created_at,
-      recipe: recipeData[loved.recipe_id] || { title: `Recipe ${loved.recipe_id}`, summary: '', time: 0, servings: 0, difficulty: 'Unknown', cuisine: 'Unknown', dietary: [] }
-    }));
+    // Enrich loved recipes with recipe details from database
+    const enrichedLovedRecipes = await Promise.all(
+      lovedRecipesData.map(async (loved) => {
+        const recipeData = await getRecipeById(loved.recipe_id);
+        return {
+          recipe_id: loved.recipe_id,
+          created_at: loved.created_at,
+          recipe: recipeData || {
+            title: `Recipe ${loved.recipe_id}`,
+            summary: '',
+            time: 0,
+            servings: 0,
+            difficulty: 'Unknown',
+            cuisine: 'Unknown',
+            dietary: []
+          }
+        };
+      })
+    );
 
     return NextResponse.json({
       user: {

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChefHatIcon, CalendarIcon, ShoppingCartIcon, SparklesIcon } from "lucide-react";
+import Layout from "../components/Layout";
 import Header from "../components/Header";
 import SocialFeed from "../components/SocialFeed";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,66 +13,12 @@ export default function Home() {
   // If user is logged in, show the social feed as homepage
   if (user) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        
-        {/* Welcome Banner for logged in users */}
-        <div className="bg-gradient-to-r from-red-600 to-red-700 text-white py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold mb-2">Welcome back, {user.name}!</h1>
-              <p className="text-red-100">See what the cooking community is up to</p>
-            </div>
-          </div>
-        </div>
-
+      <Layout>
         {/* Social Feed */}
         <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-4 gap-8">
-            {/* Quick Actions Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-sm p-6 sticky top-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-                <div className="space-y-3">
-                  <Link
-                    href="/meal-plan"
-                    className="w-full flex items-center p-3 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    <CalendarIcon className="h-5 w-5 mr-3" />
-                    <span className="font-medium">Meal Plan</span>
-                  </Link>
-                  <Link
-                    href="/shopping-list"
-                    className="w-full flex items-center p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-                  >
-                    <ShoppingCartIcon className="h-5 w-5 mr-3" />
-                    <span className="font-medium">Shopping List</span>
-                  </Link>
-                  <Link
-                    href="/recipes"
-                    className="w-full flex items-center p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <ChefHatIcon className="h-5 w-5 mr-3" />
-                    <span className="font-medium">Browse Recipes</span>
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="w-full flex items-center p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
-                  >
-                    <SparklesIcon className="h-5 w-5 mr-3" />
-                    <span className="font-medium">My Profile</span>
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Main Feed */}
-            <div className="lg:col-span-3">
-              <SocialFeed />
-            </div>
-          </div>
+          <SocialFeed />
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -135,7 +82,7 @@ export default function Home() {
               More than just meal planning
             </p>
             <p className="mt-4 max-w-2xl text-xl text-gray-500 lg:mx-auto">
-              Join a community of home cooks sharing recipes, reactions, and meal planning inspiration. 121+ curated recipes with social engagement.
+              Join a community of home cooks sharing recipes, reactions, and meal planning inspiration. 100's of curated recipes with social engagement.
             </p>
           </div>
 

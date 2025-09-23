@@ -240,7 +240,7 @@ export default function NewMealPlan() {
                     href="/recipes"
                     className="block text-center text-red-600 hover:text-red-700 text-sm font-medium"
                   >
-                    Browse all 121+ recipes →
+                    Browse all 100's of recipes →
                   </Link>
                 </div>
               </div>
