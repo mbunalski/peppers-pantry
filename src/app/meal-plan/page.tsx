@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChefHatIcon, CalendarIcon, ShoppingCartIcon, MessageSquareIcon, ClockIcon, DollarSignIcon, LockIcon, PlusIcon, RefreshCwIcon } from "lucide-react";
 import Layout from "../../components/Layout";
+import ProtectedRoute from "../../components/ProtectedRoute";
 import { useAuth } from "../../contexts/AuthContext";
 
 // Sample meal plan data
@@ -249,7 +250,8 @@ export default function MealPlan() {
   }
 
   return (
-    <Layout>
+    <ProtectedRoute message="Sign up to create personalized meal plans and build your weekly menu!">
+      <Layout>
 
       {/* Hero Section */}
       <div className="bg-white">
@@ -619,6 +621,7 @@ export default function MealPlan() {
           </div>
         </div>
       </footer>
-    </Layout>
+      </Layout>
+    </ProtectedRoute>
   );
 }

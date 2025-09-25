@@ -75,7 +75,9 @@ export async function GET(request: NextRequest) {
             servings: recipe.servings || recipe.yield || 4,
             difficulty: recipe.difficulty || "Medium",
             cuisine: recipe.cuisine || "Various",
-            dietary: recipe.dietary || recipe.diet_restrictions || []
+            dietary: recipe.dietary || recipe.diet_restrictions || [],
+            s3_medium_url: recipe.s3_medium_url,
+            image_url: recipe.image_url
           },
           social: {
             reactions,

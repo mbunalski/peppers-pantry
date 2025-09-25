@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { 
-  HeartIcon, 
-  ThumbsUpIcon, 
-  MessageCircleIcon, 
+import {
+  HeartIcon,
+  ThumbsUpIcon,
+  MessageCircleIcon,
   BookmarkIcon,
   ShareIcon,
   ClockIcon,
@@ -14,6 +14,7 @@ import {
   Frown
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import SignupModal from "./SignupModal";
 
 interface FeedItem {
   id: string;
@@ -26,6 +27,8 @@ interface FeedItem {
     difficulty: string;
     cuisine: string;
     dietary: string[];
+    s3_medium_url?: string;
+    image_url?: string;
   };
   social: {
     reactions: {
@@ -61,7 +64,7 @@ interface SocialFeedProps {
 
 export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
   const { user, token } = useAuth();
-  const [activeTab, setActiveTab] = useState<'global' | 'friends' | 'custom'>(feedType);
+  const [activeTab, setActiveTab] = useState<'global' | 'friends' | 'custom'>(user ? feedType : 'global');
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(false);
@@ -69,10 +72,17 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
   const [comments, setComments] = useState<{ [key: string]: any[] }>({});
   const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
   const [newComment, setNewComment] = useState<{ [key: string]: string }>({});
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [signupModalMessage, setSignupModalMessage] = useState("");
 
   useEffect(() => {
     loadFeed();
   }, [activeTab, token]);
+
+  const promptSignup = (action: string) => {
+    setSignupModalMessage(`Sign up to ${action} and connect with fellow food lovers!`);
+    setShowSignupModal(true);
+  };
 
   const loadFeed = async () => {
     setIsLoading(true);
@@ -94,7 +104,10 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
   };
 
   const handleReaction = async (recipeId: number, reactionType: 'love' | 'like' | 'vomit') => {
-    if (!user || !token) return;
+    if (!user || !token) {
+      promptSignup(`${reactionType} recipes`);
+      return;
+    }
 
     try {
       const response = await fetch(`/api/recipes/${recipeId}/reactions`, {
@@ -116,7 +129,10 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
   };
 
   const handleSaveRecipe = async (recipeId: number) => {
-    if (!user || !token) return;
+    if (!user || !token) {
+      promptSignup('save recipes');
+      return;
+    }
 
     try {
       const response = await fetch(`/api/recipes/${recipeId}/save`, {
@@ -137,6 +153,11 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
   };
 
   const toggleComments = async (recipeId: number) => {
+    if (!user) {
+      promptSignup('view and add comments');
+      return;
+    }
+
     const recipeKey = recipeId.toString();
     const isExpanded = expandedComments.has(recipeKey);
 
@@ -262,12 +283,49 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
     }
   };
 
-  const getTopReactionEmoji = (reactions: { love: number; like: number; vomit: number }) => {
-    const max = Math.max(reactions.love, reactions.like, reactions.vomit);
-    if (max === 0) return '👥';
-    if (reactions.love === max) return '❤️';
-    if (reactions.like === max) return '👍';
-    return '🤮';  // Keep consistent with recipe pages
+  const getReactionEmojis = (reactions: { love: number; like: number; vomit: number }) => {
+    const emojis = [];
+    if (reactions.love > 0) emojis.push('❤️');
+    if (reactions.like > 0) emojis.push('👍');
+    if (reactions.vomit > 0) emojis.push('🤮');
+    return emojis;
+  };
+
+  const formatEngagementSummary = (item: FeedItem) => {
+    const { reactions, recentReactions, commentCount } = item.social;
+    const totalReactions = reactions.love + reactions.like + reactions.vomit;
+
+    if (totalReactions === 0 && commentCount === 0) return null;
+
+    const emojis = getReactionEmojis(reactions);
+    const parts = [];
+
+    if (emojis.length > 0) {
+      parts.push(emojis.join(''));
+    }
+
+    // Get unique users who reacted (limit to 2)
+    const reactionUsers = recentReactions?.slice(0, 2).map((r: any) => r.name) || [];
+    const remainingReactions = Math.max(0, totalReactions - 2);
+
+    if (reactionUsers.length > 0) {
+      const userText = reactionUsers.join(', ');
+      if (remainingReactions > 0) {
+        const formattedCount = remainingReactions >= 1000
+          ? `${(remainingReactions / 1000).toFixed(1)}k`
+          : remainingReactions.toString();
+        parts.push(`${userText} and ${formattedCount} others`);
+      } else {
+        parts.push(userText);
+      }
+    } else if (totalReactions > 0) {
+      const formattedCount = totalReactions >= 1000
+        ? `${(totalReactions / 1000).toFixed(1)}k`
+        : totalReactions.toString();
+      parts.push(`${formattedCount} reactions`);
+    }
+
+    return parts.join(' ');
   };
 
   const formatTimeAgo = (dateString: string) => {
@@ -339,16 +397,18 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
           >
             🌍 Global
           </button>
-          <button
-            onClick={() => setActiveTab('friends')}
-            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === 'friends'
-                ? 'bg-red-600 text-white'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            👥 Friends
-          </button>
+          {user && (
+            <button
+              onClick={() => setActiveTab('friends')}
+              className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === 'friends'
+                  ? 'bg-red-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              👥 Friends
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('custom')}
             className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -385,72 +445,33 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
         ) : (
           feedItems.map((item) => (
             <div key={item.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow">
-              {/* Activity Header */}
-              <div className="p-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-lg">
-                        {getTopReactionEmoji(item.social.reactions)}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-gray-900 font-medium">
-                        {generateActivitySummary(item)}
-                      </p>
-                      <p className="text-gray-500 text-sm">{formatTimeAgo(item.latest_activity)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Recipe Card */}
-              <div className="px-6 pb-4">
+              <div className="px-6 pt-6 pb-4">
                 <Link href={`/recipe/${item.recipe.id}`} className="block group">
-                  <div className="border border-gray-200 rounded-lg overflow-hidden group-hover:border-gray-300 transition-colors">
-                    <div className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-red-600 transition-colors">
-                            {item.recipe.title}
-                          </h3>
-                          <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                            {item.recipe.summary}
-                          </p>
-                          <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
-                            <div className="flex items-center">
-                              <ClockIcon className="h-4 w-4 mr-1" />
-                              {item.recipe.time}m
-                            </div>
-                            <div className="flex items-center">
-                              <UsersIcon className="h-4 w-4 mr-1" />
-                              {item.recipe.servings} servings
-                            </div>
-                            <div className="px-2 py-1 bg-gray-100 rounded-full text-xs">
-                              {item.recipe.cuisine}
-                            </div>
-                            <div className="px-2 py-1 bg-gray-100 rounded-full text-xs">
-                              {item.recipe.difficulty}
-                            </div>
-                          </div>
-                          {item.recipe.dietary.length > 0 && (
-                            <div className="flex items-center space-x-2 mt-2">
-                              {item.recipe.dietary.map((diet) => (
-                                <span key={diet} className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                                  {diet}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                  <div className="rounded-lg overflow-hidden transition-transform group-hover:scale-[1.02]">
+                    {/* Recipe Image */}
+                    {(item.recipe.s3_medium_url || item.recipe.image_url) && (
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <img
+                          src={item.recipe.s3_medium_url || item.recipe.image_url}
+                          alt={item.recipe.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
                       </div>
+                    )}
+
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-red-600 transition-colors">
+                        {item.recipe.title}
+                      </h3>
                     </div>
                   </div>
                 </Link>
               </div>
 
               {/* Social Actions */}
-              <div className="px-6 pb-6">
+              <div className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-6">
                     {/* Reactions */}
@@ -462,7 +483,6 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                             ? 'bg-red-100 text-red-700'
                             : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
                         }`}
-                        disabled={!user}
                       >
                         <HeartIcon className={`h-4 w-4 ${item.social.userReaction === 'love' ? 'fill-current' : ''}`} />
                         <span>{item.social.reactions.love}</span>
@@ -474,7 +494,6 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                             ? 'bg-blue-100 text-blue-700'
                             : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                         }`}
-                        disabled={!user}
                       >
                         <ThumbsUpIcon className={`h-4 w-4 ${item.social.userReaction === 'like' ? 'fill-current' : ''}`} />
                         <span>{item.social.reactions.like}</span>
@@ -486,7 +505,6 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
                         }`}
-                        disabled={!user}
                       >
                         <Frown className={`h-4 w-4 ${item.social.userReaction === 'vomit' ? 'fill-current' : ''}`} />
                         <span>{item.social.reactions.vomit}</span>
@@ -525,10 +543,10 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                 </div>
 
                 {/* Engagement Summary */}
-                {item.social.totalEngagement > 0 && (
+                {formatEngagementSummary(item) && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-500">
-                      {item.social.totalEngagement} total interactions
+                    <p className="text-sm text-gray-700">
+                      {formatEngagementSummary(item)}
                     </p>
                   </div>
                 )}
@@ -621,6 +639,13 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
           </div>
         )}
       </div>
+
+      {/* Signup Modal */}
+      <SignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        message={signupModalMessage}
+      />
     </div>
   );
 }

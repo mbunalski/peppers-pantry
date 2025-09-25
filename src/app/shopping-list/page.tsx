@@ -17,6 +17,7 @@ import {
   XIcon
 } from "lucide-react";
 import Layout from "../../components/Layout";
+import ProtectedRoute from "../../components/ProtectedRoute";
 import { useAuth } from "../../contexts/AuthContext";
 
 interface ShoppingItem {
@@ -282,7 +283,8 @@ export default function ShoppingList() {
   }
 
   return (
-    <Layout>
+    <ProtectedRoute message="Sign up to create shopping lists and organize your grocery trips!">
+      <Layout>
 
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -510,6 +512,7 @@ export default function ShoppingList() {
           }
         }
       `}</style>
-    </Layout>
+      </Layout>
+    </ProtectedRoute>
   );
 }
