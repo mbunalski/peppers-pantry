@@ -18,7 +18,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div className="fixed left-6 top-24 z-30 space-y-3">
+    <div className="hidden lg:block fixed left-6 top-24 z-30 space-y-3">
       <Link
         href="/meal-plan"
         className="flex items-center p-3 bg-red-500/80 backdrop-blur-sm text-white rounded-xl hover:bg-red-500/90 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105"
