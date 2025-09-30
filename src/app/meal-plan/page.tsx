@@ -348,59 +348,85 @@ export default function MealPlan() {
                     const mealDay = meal.day_of_week || meal.day;
                     const isDuplicate = mealDay !== 'TBD' && duplicateDays.has(mealDay);
 
+                    // Use S3 image if available, otherwise fall back to original image_url
+                    const imageUrl = meal.s3_medium_url || meal.image_url || '/placeholder-recipe.jpg';
+
                     return (
-                    <div key={index} className={`p-3 sm:p-4 rounded-lg transition-all duration-200 ${
+                    <div key={index} className={`grid grid-cols-12 gap-4 p-4 rounded-lg transition-all duration-200 items-center ${
                       isDuplicate
                         ? 'bg-red-50 border-2 border-red-200 shadow-md'
                         : 'bg-gray-50'
                     } ${(removingItemId === meal.id || updatingItemId === meal.id) ? 'opacity-50' : ''}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0">
-                        <div className="flex-shrink-0 w-full sm:w-28">
-                          <select
-                            value={meal.day_of_week || meal.day}
-                            onChange={(e) => updateMealPlanItemDay(meal.id, e.target.value)}
-                            disabled={updatingItemId === meal.id}
-                            className={`w-full text-xs sm:text-sm font-medium bg-white border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                              isDuplicate
-                                ? 'text-red-700 border-red-300 focus:ring-red-500'
-                                : 'text-gray-700 border-gray-300 focus:ring-red-500'
-                            }`}
-                          >
-                            {daysOfWeek.map((day) => (
-                              <option key={day} value={day}>{day}</option>
-                            ))}
-                          </select>
+
+                      {/* Day of Week Column */}
+                      <div className="col-span-3">
+                        <select
+                          value={meal.day_of_week || meal.day}
+                          onChange={(e) => updateMealPlanItemDay(meal.id, e.target.value)}
+                          disabled={updatingItemId === meal.id}
+                          className={`w-full text-xs sm:text-sm font-medium bg-white border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isDuplicate
+                              ? 'text-red-700 border-red-300 focus:ring-red-500'
+                              : 'text-gray-700 border-gray-300 focus:ring-red-500'
+                          }`}
+                        >
+                          {daysOfWeek.map((day) => (
+                            <option key={day} value={day}>{day}</option>
+                          ))}
+                        </select>
+                        {isDuplicate && (
+                          <p className="text-xs text-red-600 mt-1 font-medium">
+                            ⚠️ Duplicate
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Picture + Name Column */}
+                      <div className="col-span-8">
+                        <div className="flex items-center space-x-3">
+                          {/* Recipe Image */}
+                          <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                            <img
+                              src={imageUrl}
+                              alt={meal.recipe_title || meal.meal}
+                              className="w-full h-full object-cover rounded-lg"
+                              onError={(e) => {
+                                e.currentTarget.src = '/placeholder-recipe.jpg';
+                              }}
+                            />
+                          </div>
+                          {/* Recipe Name */}
+                          <div className="flex-1">
+                            <h3 className={`text-sm sm:text-base font-medium ${
+                              isDuplicate ? 'text-red-900' : 'text-gray-900'
+                            }`}>
+                              {(meal.recipe_id || meal.recipeId) ? (
+                                <Link
+                                  href={`/recipe/${meal.recipe_id || meal.recipeId}`}
+                                  className="text-blue-600 hover:text-blue-700 underline"
+                                >
+                                  {meal.recipe_title || meal.meal}
+                                </Link>
+                              ) : (
+                                meal.recipe_title || meal.meal
+                              )}
+                            </h3>
+                          </div>
                         </div>
-                        <div className="flex-1 sm:ml-4">
-                          <h3 className={`text-sm sm:text-base font-medium ${
-                            isDuplicate ? 'text-red-900' : 'text-gray-900'
-                          }`}>
-                            {(meal.recipe_id || meal.recipeId) ? (
-                              <Link
-                                href={`/recipe/${meal.recipe_id || meal.recipeId}`}
-                                className="text-blue-600 hover:text-blue-700 underline"
-                              >
-                                {meal.recipe_title || meal.meal}
-                              </Link>
-                            ) : (
-                              meal.recipe_title || meal.meal
-                            )}
-                          </h3>
-                          {isDuplicate && (
-                            <p className="text-xs text-red-600 mt-1 font-medium">
-                              ⚠️ Duplicate day - multiple meals scheduled
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex-shrink-0 flex justify-end">
-                          <button
-                            onClick={() => removeMealPlanItem(meal.id)}
-                            disabled={removingItemId === meal.id || updatingItemId === meal.id}
-                            className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {removingItemId === meal.id ? 'Removing...' : 'Remove'}
-                          </button>
-                        </div>
+                      </div>
+
+                      {/* Delete Button Column */}
+                      <div className="col-span-1 flex justify-center">
+                        <button
+                          onClick={() => removeMealPlanItem(meal.id)}
+                          disabled={removingItemId === meal.id || updatingItemId === meal.id}
+                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete meal"
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                     );
@@ -507,122 +533,10 @@ export default function MealPlan() {
               )}
             </div>
 
-            {/* Actions */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <button 
-                  onClick={generateMealPlan}
-                  disabled={isGenerating}
-                  className="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {isGenerating ? 'Generating...' : 'New Meal Plan'}
-                </button>
-                <button 
-                  onClick={generateShoppingList}
-                  disabled={isGeneratingShoppingList || !hasGenerated}
-                  className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                  {isGeneratingShoppingList ? 'Generating...' : 'Shopping List'}
-                </button>
-                <Link 
-                  href="/recipes"
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center"
-                >
-                  <ChefHatIcon className="h-4 w-4 mr-2" />
-                  Browse Recipes
-                </Link>
-                <Link 
-                  href="/shopping-list"
-                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center"
-                >
-                  <ShoppingCartIcon className="h-4 w-4 mr-2" />
-                  View Shopping Lists
-                </Link>
-                <Link
-                  href="/preferences"
-                  className="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center justify-center"
-                >
-                  <MessageSquareIcon className="h-4 w-4 mr-2" />
-                  Edit Preferences
-                </Link>
-              </div>
-            </div>
-
-            {/* Tips */}
-            <div className="bg-blue-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-3">💡 Pro Tips</h3>
-              <ul className="space-y-2 text-sm text-blue-800">
-                <li>• Update your preferences anytime to get new meal suggestions</li>
-                <li>• Click on recipe names to view detailed cooking instructions</li>
-                <li>• Generate shopping lists from your meal plans</li>
-                <li>• Browse our recipe collection to add favorites to plans</li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Features Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-            Why Choose Smart Meal Planning?
-          </h2>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center">
-              <div className="bg-red-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                <ChefHatIcon className="h-6 w-6 text-red-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">AI-Powered Plans</h3>
-              <p className="text-sm text-gray-600">Intelligent meal suggestions based on your preferences</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                <CalendarIcon className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Personalized Plans</h3>
-              <p className="text-sm text-gray-600">Tailored to your dietary needs and budget</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                <ShoppingCartIcon className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Smart Shopping</h3>
-              <p className="text-sm text-gray-600">Auto-generated shopping lists</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="bg-yellow-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                <ClockIcon className="h-6 w-6 text-yellow-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Time Saving</h3>
-              <p className="text-sm text-gray-600">No more meal planning stress</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-white">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 md:flex md:items-center md:justify-between lg:px-8">
-          <div className="flex justify-center space-x-6 md:order-2">
-            <Link href="/privacy" className="text-gray-400 hover:text-gray-500">
-              Privacy Policy
-            </Link>
-          </div>
-          <div className="mt-8 md:mt-0 md:order-1">
-            <p className="text-center text-base text-gray-400">
-              &copy; 2024 Pepper's Pantry. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
       </Layout>
     </ProtectedRoute>
   );
