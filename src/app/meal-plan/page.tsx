@@ -257,19 +257,18 @@ export default function MealPlan() {
       <div className="bg-white">
         <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
-              Your Personalized Meal Plan
+            <h1 className="text-2xl font-bold text-gray-900 sm:text-4xl lg:text-5xl">
+              Your Meal Plan
             </h1>
-            <p className="mt-4 text-xl text-gray-500 max-w-3xl mx-auto">
-              Welcome back, {user.name}! Generate custom weekly meal plans based on your preferences, 
-              dietary needs, and cooking time.
+            <p className="mt-4 text-base sm:text-xl text-gray-500 max-w-3xl mx-auto">
+              Welcome back, {user.name}! Generate custom weekly meal plans.
             </p>
             <div className="mt-8">
               {!hasGenerated ? (
                 <button
                   onClick={generateMealPlan}
                   disabled={isGenerating}
-                  className="bg-red-600 text-white px-8 py-3 rounded-lg hover:bg-red-700 font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-red-600 text-white px-4 py-2 sm:px-8 sm:py-3 rounded-lg hover:bg-red-700 font-medium text-sm sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (
                     <span className="flex items-center">
@@ -287,7 +286,7 @@ export default function MealPlan() {
                 <button
                   onClick={generateMealPlan}
                   disabled={isGenerating}
-                  className="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-green-600 text-white px-4 py-2 sm:px-8 sm:py-3 rounded-lg hover:bg-green-700 font-medium text-sm sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (
                     <span className="flex items-center">
@@ -350,55 +349,58 @@ export default function MealPlan() {
                     const isDuplicate = mealDay !== 'TBD' && duplicateDays.has(mealDay);
 
                     return (
-                    <div key={index} className={`flex items-center p-4 rounded-lg transition-all duration-200 ${
+                    <div key={index} className={`p-3 sm:p-4 rounded-lg transition-all duration-200 ${
                       isDuplicate
                         ? 'bg-red-50 border-2 border-red-200 shadow-md'
                         : 'bg-gray-50'
                     } ${(removingItemId === meal.id || updatingItemId === meal.id) ? 'opacity-50' : ''}`}>
-                      <div className="flex-shrink-0 w-32">
-                        <select
-                          value={meal.day_of_week || meal.day}
-                          onChange={(e) => updateMealPlanItemDay(meal.id, e.target.value)}
-                          disabled={updatingItemId === meal.id}
-                          className={`text-sm font-medium bg-white border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isDuplicate
-                              ? 'text-red-700 border-red-300 focus:ring-red-500'
-                              : 'text-gray-700 border-gray-300 focus:ring-red-500'
-                          }`}
-                        >
-                          {daysOfWeek.map((day) => (
-                            <option key={day} value={day}>{day}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="flex-1 ml-4">
-                        <h3 className={`text-base font-medium ${
-                          isDuplicate ? 'text-red-900' : 'text-gray-900'
-                        }`}>
-                          {meal.recipe_title || meal.meal}
-                        </h3>
-                        {isDuplicate && (
-                          <p className="text-xs text-red-600 mt-1 font-medium">
-                            ⚠️ Duplicate day - multiple meals scheduled
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex-shrink-0 flex space-x-2">
-                        {(meal.recipe_id || meal.recipeId) && (
-                          <Link
-                            href={`/recipe/${meal.recipe_id || meal.recipeId}`}
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0">
+                        <div className="flex-shrink-0 w-full sm:w-28">
+                          <select
+                            value={meal.day_of_week || meal.day}
+                            onChange={(e) => updateMealPlanItemDay(meal.id, e.target.value)}
+                            disabled={updatingItemId === meal.id}
+                            className={`w-full text-xs sm:text-sm font-medium bg-white border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              isDuplicate
+                                ? 'text-red-700 border-red-300 focus:ring-red-500'
+                                : 'text-gray-700 border-gray-300 focus:ring-red-500'
+                            }`}
                           >
-                            View Recipe
-                          </Link>
-                        )}
-                        <button 
-                          onClick={() => removeMealPlanItem(meal.id)}
-                          disabled={removingItemId === meal.id || updatingItemId === meal.id}
-                          className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {removingItemId === meal.id ? 'Removing...' : 'Remove'}
-                        </button>
+                            {daysOfWeek.map((day) => (
+                              <option key={day} value={day}>{day}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex-1 sm:ml-4">
+                          <h3 className={`text-sm sm:text-base font-medium ${
+                            isDuplicate ? 'text-red-900' : 'text-gray-900'
+                          }`}>
+                            {(meal.recipe_id || meal.recipeId) ? (
+                              <Link
+                                href={`/recipe/${meal.recipe_id || meal.recipeId}`}
+                                className="text-blue-600 hover:text-blue-700 underline"
+                              >
+                                {meal.recipe_title || meal.meal}
+                              </Link>
+                            ) : (
+                              meal.recipe_title || meal.meal
+                            )}
+                          </h3>
+                          {isDuplicate && (
+                            <p className="text-xs text-red-600 mt-1 font-medium">
+                              ⚠️ Duplicate day - multiple meals scheduled
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 flex justify-end">
+                          <button
+                            onClick={() => removeMealPlanItem(meal.id)}
+                            disabled={removingItemId === meal.id || updatingItemId === meal.id}
+                            className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {removingItemId === meal.id ? 'Removing...' : 'Remove'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     );

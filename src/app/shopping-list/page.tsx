@@ -291,37 +291,14 @@ export default function ShoppingList() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center">
-                <ShoppingCartIcon className="h-8 w-8 text-red-600 mr-3" />
+              <h1 className="text-xl sm:text-3xl font-bold text-gray-900 flex items-center">
+                <ShoppingCartIcon className="h-6 w-6 sm:h-8 sm:w-8 text-red-600 mr-2 sm:mr-3" />
                 Shopping List
               </h1>
               <p className="text-gray-600 mt-1">
                 Created {new Date(shoppingList.created_at).toLocaleDateString()}
               </p>
             </div>
-            <div className="flex space-x-3">
-                <button
-                  onClick={copyToClipboard}
-                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <CopyIcon className="h-4 w-4 mr-2" />
-                  {copySuccess ? 'Copied!' : 'Copy List'}
-                </button>
-                <button 
-                  onClick={handleShare}
-                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <ShareIcon className="h-4 w-4 mr-2" />
-                  Share
-                </button>
-                <button 
-                  onClick={handlePrint}
-                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <PrinterIcon className="h-4 w-4 mr-2" />
-                  Print
-                </button>
-              </div>
           </div>
         </div>
 
@@ -451,37 +428,6 @@ export default function ShoppingList() {
           ))}
         </div>
 
-        {/* Action Footer */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/meal-plan"
-                className="flex items-center text-red-600 hover:text-red-700"
-              >
-                <CalendarIcon className="h-4 w-4 mr-1" />
-                Back to Meal Plan
-              </Link>
-              <Link
-                href="/recipes"
-                className="flex items-center text-blue-600 hover:text-blue-700"
-              >
-                <ChefHatIcon className="h-4 w-4 mr-1" />
-                Browse Recipes
-              </Link>
-            </div>
-            <button
-              onClick={() => {
-                if (confirm('Generate a new shopping list? This will create a fresh list from your current meal plan.')) {
-                  router.push('/meal-plan');
-                }
-              }}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium"
-            >
-              Generate New List
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Print Styles */}

@@ -280,7 +280,7 @@ function RecipesContent() {
                 placeholder="Search recipes by name, ingredient, or cuisine..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-lg"
+                className="w-full pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-sm sm:text-base bg-white"
               />
             </div>
             <button

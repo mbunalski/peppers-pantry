@@ -17,8 +17,7 @@ export default function Header() {
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
               <ChefHatIcon className="h-8 w-8 text-red-600" />
-              <span className="ml-2 text-2xl font-bold text-gray-900 dark:text-white hidden sm:block">Pepper's Pantry</span>
-              <span className="ml-1 text-lg font-bold text-gray-900 dark:text-white sm:hidden">PP</span>
+              <span className="ml-2 text-2xl font-bold text-gray-900 dark:text-white">Pepper's Pantry</span>
             </Link>
           </div>
           <div className="hidden md:block">
@@ -27,13 +26,6 @@ export default function Header() {
               <Link href="/recipes" className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Recipes</Link>
               <Link href="/privacy" className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium">Privacy</Link>
               
-              <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
-                className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                title={`Current theme: ${theme}`}
-              >
-                <ThemeIcon className="h-5 w-5" />
-              </button>
 
               {user ? (
                 <div className="flex items-center space-x-3">
@@ -58,31 +50,21 @@ export default function Header() {
           </div>
           {/* Mobile menu */}
           <div className="md:hidden">
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => setTheme(theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light')}
-                className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 p-1 rounded-md transition-colors"
-                title={`Current theme: ${theme}`}
-              >
-                <ThemeIcon className="h-5 w-5" />
-              </button>
-
+            <div className="flex items-center space-x-2">
               {user ? (
                 <>
-                  <Link href="/dashboard" className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 p-1 rounded-md transition-colors">
-                    <UserIcon className="h-5 w-5" />
-                  </Link>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">{user.name}</span>
                   <button
                     onClick={logout}
-                    className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-2 py-1 rounded-md text-xs font-medium"
+                    className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-2 py-1 rounded-md text-sm font-medium"
                   >
-                    Out
+                    Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <Link href="/login" className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-2 py-1 rounded-md text-xs font-medium">In</Link>
-                  <Link href="/signup" className="bg-red-600 text-white hover:bg-red-700 px-2 py-1 rounded-md text-xs font-medium">Up</Link>
+                  <Link href="/login" className="text-gray-500 hover:text-red-600 dark:text-gray-300 dark:hover:text-red-400 px-2 py-1 rounded-md text-sm font-medium">Login</Link>
+                  <Link href="/signup" className="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium">Sign Up</Link>
                 </>
               )}
             </div>

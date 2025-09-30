@@ -39,25 +39,25 @@ export default function Layout({ children }: LayoutProps) {
               <span className="text-xs mt-1">Home</span>
             </Link>
             <Link
+              href="/recipes"
+              className="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 transition-colors"
+            >
+              <ChefHatIcon className="h-5 w-5" />
+              <span className="text-xs mt-1">Recipes</span>
+            </Link>
+            <Link
               href="/meal-plan"
               className="flex flex-col items-center p-2 text-gray-500 hover:text-red-600 transition-colors"
             >
               <CalendarIcon className="h-5 w-5" />
-              <span className="text-xs mt-1">Meals</span>
+              <span className="text-xs mt-1">My Meals</span>
             </Link>
             <Link
               href="/shopping-list"
               className="flex flex-col items-center p-2 text-gray-500 hover:text-green-600 transition-colors"
             >
               <ShoppingCartIcon className="h-5 w-5" />
-              <span className="text-xs mt-1">Shop</span>
-            </Link>
-            <Link
-              href="/recipes"
-              className="flex flex-col items-center p-2 text-gray-500 hover:text-blue-600 transition-colors"
-            >
-              <ChefHatIcon className="h-5 w-5" />
-              <span className="text-xs mt-1">Recipes</span>
+              <span className="text-xs mt-1">Cart</span>
             </Link>
             <Link
               href="/dashboard"
