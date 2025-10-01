@@ -20,9 +20,11 @@ export async function GET(request: NextRequest) {
       name: mealPlan.name,
       items: (mealPlan.items || []).map(item => ({
         id: item.id,
-        day: item.day_of_week,
-        meal: item.recipe_title,
-        recipeId: item.recipe_id
+        day_of_week: item.day_of_week,
+        recipe_title: item.recipe_title,
+        recipe_id: item.recipe_id,
+        image_url: item.image_url,
+        s3_medium_url: item.s3_medium_url
       }))
     });
     
@@ -133,9 +135,11 @@ export async function POST(request: NextRequest) {
           name: newMealPlan!.name,
           items: (newMealPlan!.items || []).map(item => ({
             id: item.id,
-            day: item.day_of_week,
-            meal: item.recipe_title,
-            recipeId: item.recipe_id
+            day_of_week: item.day_of_week,
+            recipe_title: item.recipe_title,
+            recipe_id: item.recipe_id,
+            image_url: item.image_url,
+            s3_medium_url: item.s3_medium_url
           }))
         }
       });

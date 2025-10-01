@@ -348,8 +348,8 @@ export default function MealPlan() {
                     const mealDay = meal.day_of_week || meal.day;
                     const isDuplicate = mealDay !== 'TBD' && duplicateDays.has(mealDay);
 
-                    // Use S3 image if available, otherwise fall back to original image_url
-                    const imageUrl = meal.s3_medium_url || meal.image_url || '/placeholder-recipe.jpg';
+                    // Use S3 image if available, otherwise fall back to original image_url or placeholder
+                    const imageUrl = meal.s3_medium_url || meal.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
 
                     return (
                     <div key={index} className={`grid grid-cols-12 gap-4 p-4 rounded-lg transition-all duration-200 items-center ${
@@ -391,7 +391,7 @@ export default function MealPlan() {
                               alt={meal.recipe_title || meal.meal}
                               className="w-full h-full object-cover rounded-lg"
                               onError={(e) => {
-                                e.currentTarget.src = '/placeholder-recipe.jpg';
+                                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
                               }}
                             />
                           </div>
