@@ -25,6 +25,15 @@ npm run lint         # Run ESLint
 npm run typecheck    # Run TypeScript checks (if available)
 ```
 
+## Testing & Debugging Strategy
+**IMPORTANT**: When fixing issues or implementing features:
+1. Make the code changes first
+2. Deploy to local development server (`npm run dev`)
+3. Let the user test the changes directly in browser
+4. If debugging is needed, add console.log statements to relevant files
+5. **DO NOT** spend time creating test scripts, authorization tokens, or API testing via curl
+6. User will verify functionality and provide feedback for next steps
+
 ## Development Server Troubleshooting
 If `npm run dev` doesn't start properly or ports are occupied:
 

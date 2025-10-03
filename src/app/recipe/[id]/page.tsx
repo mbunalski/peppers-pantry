@@ -363,87 +363,87 @@ export default function RecipePage() {
             </div>
           </div>
 
-          {/* Dietary Tags & Actions */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {recipe.dietary.length > 0 && (
-                <div className="flex space-x-2">
-                  {recipe.dietary.map((diet: string, index: number) => (
-                    <span key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded">
-                      {diet}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-6">
-              {/* Reaction Buttons */}
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => userReaction === 'love' ? handleRemoveReaction() : handleReaction('love')}
-                  disabled={isLoadingReactions}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                    userReaction === 'love' 
-                      ? 'bg-red-100 text-red-700 border-red-200' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
-                  } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span className="text-lg">❤️</span>
-                  <span className="font-medium">{reactions.love}</span>
-                </button>
-                <button
-                  onClick={() => userReaction === 'like' ? handleRemoveReaction() : handleReaction('like')}
-                  disabled={isLoadingReactions}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                    userReaction === 'like' 
-                      ? 'bg-blue-100 text-blue-700 border-blue-200' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
-                  } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span className="text-lg">👍</span>
-                  <span className="font-medium">{reactions.like}</span>
-                </button>
-                <button
-                  onClick={() => userReaction === 'vomit' ? handleRemoveReaction() : handleReaction('vomit')}
-                  disabled={isLoadingReactions}
-                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                    userReaction === 'vomit' 
-                      ? 'bg-yellow-100 text-yellow-700 border-yellow-200' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
-                  } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <span className="text-lg">🤮</span>
-                  <span className="font-medium">{reactions.vomit}</span>
-                </button>
+          {/* Dietary Tags */}
+          {recipe.dietary.length > 0 && (
+            <div className="mb-6">
+              <div className="flex flex-wrap gap-2">
+                {recipe.dietary.map((diet: string, index: number) => (
+                  <span key={index} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded">
+                    {diet}
+                  </span>
+                ))}
               </div>
+            </div>
+          )}
 
-              {/* Save Button */}
+          {/* Actions - Mobile Friendly */}
+          <div className="space-y-4">
+            {/* Reaction Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => userReaction === 'love' ? handleRemoveReaction() : handleReaction('love')}
+                disabled={isLoadingReactions}
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  userReaction === 'love'
+                    ? 'bg-red-100 text-red-700 border-red-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600'
+                } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span className="text-base">❤️</span>
+                <span className="font-medium">{reactions.love}</span>
+              </button>
+              <button
+                onClick={() => userReaction === 'like' ? handleRemoveReaction() : handleReaction('like')}
+                disabled={isLoadingReactions}
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  userReaction === 'like'
+                    ? 'bg-blue-100 text-blue-700 border-blue-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-blue-50 hover:text-blue-600'
+                } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span className="text-base">👍</span>
+                <span className="font-medium">{reactions.like}</span>
+              </button>
+              <button
+                onClick={() => userReaction === 'vomit' ? handleRemoveReaction() : handleReaction('vomit')}
+                disabled={isLoadingReactions}
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  userReaction === 'vomit'
+                    ? 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
+                } ${isLoadingReactions ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span className="text-base">🤮</span>
+                <span className="font-medium">{reactions.vomit}</span>
+              </button>
+            </div>
+
+            {/* Save and Share Actions */}
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleSaveRecipe}
-                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
-                  isSaved 
-                    ? 'bg-green-100 text-green-700' 
+                className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors text-sm ${
+                  isSaved
+                    ? 'bg-green-100 text-green-700'
                     : 'bg-gray-100 text-gray-600 hover:bg-green-50 hover:text-green-600'
                 }`}
               >
                 <BookmarkIcon className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
-                <span className="text-sm font-medium">
+                <span className="font-medium">
                   {isSaved ? 'Saved' : 'Save'}
                 </span>
               </button>
-
-              {/* Share & Print */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleShare}
-                  className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
-                >
-                  <ShareIcon className="h-5 w-5" />
-                </button>
-                <button className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200">
-                  <PrinterIcon className="h-5 w-5" />
-                </button>
-              </div>
+              <button
+                onClick={handleShare}
+                className="flex items-center space-x-1 px-3 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm"
+              >
+                <ShareIcon className="h-4 w-4" />
+                <span className="font-medium">Share</span>
+              </button>
+              <button className="flex items-center space-x-1 px-3 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 text-sm">
+                <PrinterIcon className="h-4 w-4" />
+                <span className="font-medium">Print</span>
+              </button>
             </div>
           </div>
         </div>
@@ -474,10 +474,6 @@ export default function RecipePage() {
               <ul className="space-y-3">
                 {recipe.ingredients.map((ingredient: any, index: number) => (
                   <li key={index} className="flex items-start">
-                    <input 
-                      type="checkbox" 
-                      className="mt-1 h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
-                    />
                     <div className="ml-3 flex-1">
                       <span className="font-medium text-gray-900">{ingredient.amount}</span>
                       <span className="text-gray-700"> {ingredient.item}</span>
@@ -495,24 +491,24 @@ export default function RecipePage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Nutrition per serving</h3>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Calories</span>
-                  <span className="font-medium">{recipe.nutrition.calories}</span>
+                  <span className="text-gray-700">Calories</span>
+                  <span className="font-medium text-gray-900">{recipe.nutrition.calories}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Protein</span>
-                  <span className="font-medium">{recipe.nutrition.protein}g</span>
+                  <span className="text-gray-700">Protein</span>
+                  <span className="font-medium text-gray-900">{recipe.nutrition.protein}g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Carbs</span>
-                  <span className="font-medium">{recipe.nutrition.carbs}g</span>
+                  <span className="text-gray-700">Carbs</span>
+                  <span className="font-medium text-gray-900">{recipe.nutrition.carbs}g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Fat</span>
-                  <span className="font-medium">{recipe.nutrition.fat}g</span>
+                  <span className="text-gray-700">Fat</span>
+                  <span className="font-medium text-gray-900">{recipe.nutrition.fat}g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Fiber</span>
-                  <span className="font-medium">{recipe.nutrition.fiber}g</span>
+                  <span className="text-gray-700">Fiber</span>
+                  <span className="font-medium text-gray-900">{recipe.nutrition.fiber}g</span>
                 </div>
               </div>
             </div>
@@ -629,7 +625,7 @@ export default function RecipePage() {
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder={user ? "Share your thoughts about this recipe..." : "Sign up to leave a comment"}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 bg-white"
                   rows={3}
                   maxLength={1000}
                   disabled={!user}

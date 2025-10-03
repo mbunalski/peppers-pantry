@@ -548,9 +548,11 @@ export async function getUserMealPlan(userId: string | number): Promise<any | nu
   
   try {
     const result = await db.query(`
-      SELECT mp.*, mpi.id as item_id, mpi.recipe_id, mpi.recipe_title, mpi.day_of_week, mpi.meal_type
+      SELECT mp.*, mpi.id as item_id, mpi.recipe_id, mpi.recipe_title, mpi.day_of_week, mpi.meal_type,
+             r.image_url, r.s3_thumbnail_url, r.s3_medium_url
       FROM meal_plans mp
       LEFT JOIN meal_plan_items mpi ON mp.id = mpi.meal_plan_id
+      LEFT JOIN recipes r ON mpi.recipe_id = r.id
       WHERE mp.user_id = $1 AND mp.id = (
         SELECT id FROM meal_plans WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1
       )
@@ -568,7 +570,10 @@ export async function getUserMealPlan(userId: string | number): Promise<any | nu
         recipe_id: row.recipe_id,
         recipe_title: row.recipe_title,
         day_of_week: row.day_of_week,
-        meal_type: row.meal_type
+        meal_type: row.meal_type,
+        image_url: row.image_url,
+        s3_thumbnail_url: row.s3_thumbnail_url,
+        s3_medium_url: row.s3_medium_url
       }))
     };
     
