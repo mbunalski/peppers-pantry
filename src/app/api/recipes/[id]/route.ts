@@ -1,6 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRecipeById, getRecipeIngredients, getRecipeSteps } from '../../../../lib/db';
 
+// Helper function to clean price information from ingredient text
+function cleanPriceFromText(text: string): string {
+  if (!text) return text;
+
+  return text
+    // Remove price patterns with parentheses like ($1.99), ($0.50)
+    .replace(/\(\$\d+\.?\d*\)/g, '')
+    // Remove price patterns like $1.99, $0.50, etc.
+    .replace(/\$\d+\.?\d*/g, '')
+    // Remove standalone price references like "about $2" or "around $3"
+    .replace(/\b(about|around|approximately)\s+\$\d+\.?\d*/gi, '')
+    // Remove empty parentheses left behind
+    .replace(/\(\s*\)/g, '')
+    // Remove multiple spaces and replace with single space
+    .replace(/\s+/g, ' ')
+    // Remove any trailing commas or periods that might be left hanging
+    .replace(/\s*[,;]\s*$/, '')
+    // Trim any leading/trailing whitespace
+    .trim();
+}
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
@@ -49,12 +70,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         fiber: 0 // Not available in database
       },
 
-      // Use database ingredients
-      ingredients: dbIngredients.map(ingredient => ({
-        item: ingredient.name,
-        amount: ingredient.raw || `${ingredient.qty || ''} ${ingredient.unit || ''}`.trim(),
-        notes: ingredient.notes || ''
-      })),
+      // Use database ingredients with price cleaning
+      ingredients: dbIngredients.map(ingredient => {
+        const cleanedRaw = cleanPriceFromText(ingredient.raw || '');
+
+        // If we have raw text and it contains useful information beyond just the ingredient name
+        if (cleanedRaw && cleanedRaw.trim() !== ingredient.name.trim()) {
+          // Remove the ingredient name from the raw text if it appears at the end
+          const cleanedAmount = cleanedRaw
+            .replace(new RegExp(`\\s+${ingredient.name}\\s*$`, 'gi'), '')
+            .replace(/1\s+\/\s*(\d+)/g, '1/$1') // Fix fraction formatting like "1 /2" to "1/2"
+            .trim();
+
+          return {
+            item: ingredient.name,
+            amount: cleanedAmount || `${ingredient.qty || ''} ${ingredient.unit || ''}`.trim(),
+            notes: cleanPriceFromText(ingredient.notes || '')
+          };
+        }
+
+        // Fallback to qty + unit if no useful raw text
+        return {
+          item: ingredient.name,
+          amount: `${ingredient.qty || ''} ${ingredient.unit || ''}`.trim(),
+          notes: cleanPriceFromText(ingredient.notes || '')
+        };
+      }),
 
       // Use database steps, with fallback
       instructions: dbSteps.length > 0

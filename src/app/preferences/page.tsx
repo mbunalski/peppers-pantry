@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChefHatIcon, DollarSignIcon, ClockIcon, ChevronRightIcon } from "lucide-react";
+import { ChefHatIcon, ClockIcon, ChevronRightIcon } from "lucide-react";
 import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -34,7 +34,6 @@ export default function Preferences() {
   const [error, setError] = useState('');
   const [preferences, setPreferences] = useState({
     dietary_restrictions: [],
-    budget_per_meal: 15,
     max_cooking_time: 30,
     complexity: 'intermediate',
     allergens: [],
@@ -168,27 +167,6 @@ export default function Preferences() {
 
             {/* Budget, Time & Meal Planning Constraints */}
             <div className="grid md:grid-cols-3 gap-8">
-              <div>
-                <h2 className="text-2xl font-semibold text-gray-900 mb-4">Budget per Meal</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <DollarSignIcon className="h-5 w-5 text-gray-400 mr-2" />
-                    <input
-                      type="range"
-                      min="5"
-                      max="50"
-                      value={preferences.budget_per_meal}
-                      onChange={(e) => handleRangeChange('budget_per_meal', Number(e.target.value))}
-                      className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                    <span className="ml-3 text-lg font-medium text-gray-900">${preferences.budget_per_meal}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-500">
-                    <span>$5</span>
-                    <span>$50+</span>
-                  </div>
-                </div>
-              </div>
 
               <div>
                 <h2 className="text-2xl font-semibold text-gray-900 mb-4">Cooking Time</h2>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ChefHatIcon, CalendarIcon, ShoppingCartIcon, MessageSquareIcon, ClockIcon, DollarSignIcon, LockIcon, PlusIcon, RefreshCwIcon } from "lucide-react";
 import Layout from "../../components/Layout";
 import ProtectedRoute from "../../components/ProtectedRoute";
+import FloatingNotification from "../../components/FloatingNotification";
 import { useAuth } from "../../contexts/AuthContext";
 
 // Sample meal plan data
@@ -37,6 +38,7 @@ export default function MealPlan() {
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info', isVisible: boolean}>({message: '', type: 'success', isVisible: false});
 
   const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "TBD"];
 
@@ -169,17 +171,15 @@ export default function MealPlan() {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          if (confirm(`Shopping list generated with ${data.items.length} items! Would you like to view it now?`)) {
-            router.push('/shopping-list');
-          }
+          setNotification({message: `Shopping list generated with ${data.items.length} items!`, type: 'success', isVisible: true});
         }
       } else {
         const errorData = await response.json();
-        alert(errorData.error || 'Error generating shopping list.');
+        setNotification({message: errorData.error || 'Error generating shopping list.', type: 'error', isVisible: true});
       }
     } catch (error) {
       console.error('Error generating shopping list:', error);
-      alert('Error generating shopping list. Please try again.');
+      setNotification({message: 'Error generating shopping list. Please try again.', type: 'error', isVisible: true});
     } finally {
       setIsGeneratingShoppingList(false);
     }
@@ -384,33 +384,48 @@ export default function MealPlan() {
                       {/* Picture + Name Column */}
                       <div className="col-span-8">
                         <div className="flex items-center space-x-3">
-                          {/* Recipe Image */}
-                          <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                            <img
-                              src={imageUrl}
-                              alt={meal.recipe_title || meal.meal}
-                              className="w-full h-full object-cover rounded-lg"
-                              onError={(e) => {
-                                e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
-                              }}
-                            />
-                          </div>
-                          {/* Recipe Name */}
+                          {/* Recipe Image - Clickable */}
+                          {(meal.recipe_id || meal.recipeId) ? (
+                            <Link href={`/recipe/${meal.recipe_id || meal.recipeId}`} className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                              <img
+                                src={imageUrl}
+                                alt={meal.recipe_title || meal.meal}
+                                className="w-full h-full object-cover rounded-lg hover:opacity-80 transition-opacity cursor-pointer"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                                }}
+                              />
+                            </Link>
+                          ) : (
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
+                              <img
+                                src={imageUrl}
+                                alt={meal.recipe_title || meal.meal}
+                                className="w-full h-full object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                                }}
+                              />
+                            </div>
+                          )}
+                          {/* Recipe Name - No underline */}
                           <div className="flex-1">
-                            <h3 className={`text-sm sm:text-base font-medium ${
-                              isDuplicate ? 'text-red-900' : 'text-gray-900'
-                            }`}>
-                              {(meal.recipe_id || meal.recipeId) ? (
-                                <Link
-                                  href={`/recipe/${meal.recipe_id || meal.recipeId}`}
-                                  className="text-blue-600 hover:text-blue-700 underline"
-                                >
-                                  {meal.recipe_title || meal.meal}
-                                </Link>
-                              ) : (
-                                meal.recipe_title || meal.meal
-                              )}
-                            </h3>
+                            {(meal.recipe_id || meal.recipeId) ? (
+                              <Link
+                                href={`/recipe/${meal.recipe_id || meal.recipeId}`}
+                                className={`text-sm sm:text-base font-medium hover:text-red-600 transition-colors ${
+                                  isDuplicate ? 'text-red-900' : 'text-gray-900'
+                                }`}
+                              >
+                                {meal.recipe_title || meal.meal}
+                              </Link>
+                            ) : (
+                              <h3 className={`text-sm sm:text-base font-medium ${
+                                isDuplicate ? 'text-red-900' : 'text-gray-900'
+                              }`}>
+                                {meal.recipe_title || meal.meal}
+                              </h3>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -537,6 +552,13 @@ export default function MealPlan() {
         </div>
       </div>
 
+      <FloatingNotification
+        message={notification.message}
+        type={notification.type}
+        isVisible={notification.isVisible}
+        onClose={() => setNotification({...notification, isVisible: false})}
+        duration={5000}
+      />
       </Layout>
     </ProtectedRoute>
   );

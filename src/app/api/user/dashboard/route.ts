@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
           recipe_id: item.recipe_id,
           title: recipeData?.title || recipeData?.name || `Recipe ${item.recipe_id}`,
           summary: recipeData?.summary || recipeData?.description || '',
+          image_url: recipeData?.image_url,
+          s3_thumbnail_url: recipeData?.s3_thumbnail_url,
+          s3_medium_url: recipeData?.s3_medium_url,
           reactions
         };
       })
@@ -55,7 +58,10 @@ export async function GET(request: NextRequest) {
         return {
           ...saved,
           title: recipeData?.title || recipeData?.name || `Recipe ${saved.recipe_id}`,
-          summary: recipeData?.summary || recipeData?.description || ''
+          summary: recipeData?.summary || recipeData?.description || '',
+          image_url: recipeData?.image_url,
+          s3_thumbnail_url: recipeData?.s3_thumbnail_url,
+          s3_medium_url: recipeData?.s3_medium_url
         };
       })
     );

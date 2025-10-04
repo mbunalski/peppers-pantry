@@ -263,7 +263,6 @@ export default function NewMealPlan() {
               <h3 className="text-lg font-semibold text-red-900 mb-2">Your Preferences</h3>
               <div className="space-y-1 text-sm text-red-700">
                 <p>• Vegetarian meals</p>
-                <p>• Budget: $15 per meal</p>
                 <p>• Max time: 30 minutes</p>
               </div>
               <Link

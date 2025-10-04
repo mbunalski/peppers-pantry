@@ -17,6 +17,7 @@ import {
   LockIcon
 } from "lucide-react";
 import Layout from "../../../components/Layout";
+import FloatingNotification from "../../../components/FloatingNotification";
 import { useAuth } from "../../../contexts/AuthContext";
 
 export default function RecipePage() {
@@ -33,6 +34,7 @@ export default function RecipePage() {
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info', isVisible: boolean}>({message: '', type: 'success', isVisible: false});
 
   // Load recipe data
   useEffect(() => {
@@ -174,7 +176,7 @@ export default function RecipePage() {
 
         if (response.ok) {
           setIsSaved(false);
-          alert('Recipe removed from Want to Make list!');
+          setNotification({message: 'Recipe removed from Want to Make list!', type: 'success', isVisible: true});
         }
       } else {
         // Save recipe
@@ -189,7 +191,7 @@ export default function RecipePage() {
 
         if (response.ok) {
           setIsSaved(true);
-          alert('Recipe saved to Want to Make list!');
+          setNotification({message: 'Recipe saved to Want to Make list!', type: 'success', isVisible: true});
         }
       }
     } catch (error) {
@@ -299,7 +301,7 @@ export default function RecipePage() {
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(window.location.href);
-      alert('Recipe URL copied to clipboard!');
+      setNotification({message: 'Recipe URL copied to clipboard!', type: 'success', isVisible: true});
     }
   };
 
@@ -538,7 +540,7 @@ export default function RecipePage() {
                         if (response.ok) {
                           const data = await response.json();
                           if (data.success) {
-                            alert(data.message + ' Changes are automatically saved.');
+                            setNotification({message: data.message + ' Changes are automatically saved.', type: 'success', isVisible: true});
                           }
                         } else {
                           const errorData = await response.json();
@@ -755,6 +757,13 @@ export default function RecipePage() {
           </div>
         </div>
       </div>
+      <FloatingNotification
+        message={notification.message}
+        type={notification.type}
+        isVisible={notification.isVisible}
+        onClose={() => setNotification({...notification, isVisible: false})}
+        duration={5000}
+      />
     </Layout>
   );
 }

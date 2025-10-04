@@ -352,44 +352,48 @@ export default function ShoppingList() {
                       </button>
 
                       {editingItem === originalIndex ? (
-                        // Edit mode
-                        <div className="ml-4 flex-1 flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={editForm.ingredient}
-                            onChange={(e) => setEditForm({ ...editForm, ingredient: e.target.value })}
-                            className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="Ingredient"
-                          />
-                          <input
-                            type="text"
-                            value={editForm.amount}
-                            onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm"
-                            placeholder="Amount"
-                          />
-                          <select
-                            value={editForm.category}
-                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                            className="px-2 py-1 border border-gray-300 rounded text-sm"
-                          >
-                            <option value="Produce">Produce</option>
-                            <option value="Meat & Protein">Meat & Protein</option>
-                            <option value="Dairy">Dairy</option>
-                            <option value="Pantry">Pantry</option>
-                          </select>
-                          <button
-                            onClick={handleSaveEdit}
-                            className="p-1 text-green-600 hover:text-green-700"
-                          >
-                            <SaveIcon className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={handleCancelEdit}
-                            className="p-1 text-gray-600 hover:text-gray-700"
-                          >
-                            <XIcon className="h-4 w-4" />
-                          </button>
+                        // Edit mode - Mobile friendly layout
+                        <div className="ml-4 flex-1 space-y-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <input
+                              type="text"
+                              value={editForm.ingredient}
+                              onChange={(e) => setEditForm({ ...editForm, ingredient: e.target.value })}
+                              className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm"
+                              placeholder="Ingredient"
+                            />
+                            <input
+                              type="text"
+                              value={editForm.amount}
+                              onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                              className="w-full sm:w-20 px-2 py-1 border border-gray-300 rounded text-sm"
+                              placeholder="Amount"
+                            />
+                            <select
+                              value={editForm.category}
+                              onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                              className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded text-sm"
+                            >
+                              <option value="Produce">Produce</option>
+                              <option value="Meat & Protein">Meat & Protein</option>
+                              <option value="Dairy">Dairy</option>
+                              <option value="Pantry">Pantry</option>
+                            </select>
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={handleSaveEdit}
+                              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         // View mode

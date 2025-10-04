@@ -3,19 +3,18 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { 
-  ChefHatIcon, 
-  CalendarIcon, 
-  ShoppingCartIcon, 
-  UserIcon, 
-  SettingsIcon, 
+import {
+  ChefHatIcon,
+  CalendarIcon,
+  ShoppingCartIcon,
+  UserIcon,
+  SettingsIcon,
   HeartIcon,
   BookmarkIcon,
   PlusIcon,
   ClockIcon,
   DollarSignIcon,
-  TrendingUpIcon,
-  EyeIcon
+  TrendingUpIcon
 } from "lucide-react";
 import Layout from "../../components/Layout";
 import { useAuth } from "../../contexts/AuthContext";
@@ -205,25 +204,44 @@ export default function Dashboard() {
             
             {dashboardData?.mealPlan?.items && dashboardData.mealPlan.items.length > 0 ? (
               <div className="space-y-3">
-                {dashboardData.mealPlan.items.slice(0, 5).map((meal: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <CalendarIcon className="h-5 w-5 text-gray-500" />
-                      <div>
-                        <span className="font-medium text-gray-900">{meal.day_of_week}</span>
-                        <p className="text-sm text-gray-600">{meal.recipe_title}</p>
-                      </div>
-                    </div>
-                    {meal.recipeId && (
+                {dashboardData.mealPlan.items.slice(0, 5).map((meal: any, index: number) => {
+                  const imageUrl = meal.s3_medium_url || meal.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                  return meal.recipe_id ? (
                       <Link
+                        key={index}
                         href={`/recipe/${meal.recipe_id}`}
-                        className="text-red-600 hover:text-red-700 text-sm"
+                        className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
                       >
-                        <EyeIcon className="h-4 w-4" />
+                        <img
+                          src={imageUrl}
+                          alt={meal.recipe_title}
+                          className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                          }}
+                        />
+                        <div>
+                          <span className="font-medium text-gray-900">{meal.day_of_week}</span>
+                          <p className="text-sm text-gray-600">{meal.recipe_title}</p>
+                        </div>
                       </Link>
-                    )}
-                  </div>
-                ))}
+                    ) : (
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <img
+                          src={imageUrl}
+                          alt={meal.recipe_title}
+                          className="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                          }}
+                        />
+                        <div>
+                          <span className="font-medium text-gray-900">{meal.day_of_week}</span>
+                          <p className="text-sm text-gray-600">{meal.recipe_title}</p>
+                        </div>
+                      </div>
+                    );
+                })}
                 {dashboardData.mealPlan.items.length > 5 && (
                   <p className="text-center text-gray-500 text-sm">
                     +{dashboardData.mealPlan.items.length - 5} more meals
@@ -294,16 +312,29 @@ export default function Dashboard() {
               </div>
               {dashboardData?.savedRecipes && dashboardData.savedRecipes.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardData.savedRecipes.slice(0, 3).map((recipe) => (
-                    <Link
-                      key={recipe.id}
-                      href={`/recipe/${recipe.recipe_id}`}
-                      className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
-                    >
-                      <h4 className="font-medium text-gray-900">{recipe.title}</h4>
-                      <p className="text-sm text-gray-600">{recipe.summary}</p>
-                    </Link>
-                  ))}
+                  {dashboardData.savedRecipes.slice(0, 3).map((recipe) => {
+                    const imageUrl = recipe.s3_medium_url || recipe.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                    return (
+                      <Link
+                        key={recipe.id}
+                        href={`/recipe/${recipe.recipe_id}`}
+                        className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={recipe.title}
+                          className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                          }}
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{recipe.title}</h4>
+                          <p className="text-sm text-gray-600">{recipe.summary}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
                   {dashboardData.savedRecipes.length > 3 && (
                     <p className="text-center text-gray-500 text-sm">
                       +{dashboardData.savedRecipes.length - 3} more saved
@@ -323,23 +354,34 @@ export default function Dashboard() {
               </div>
               {dashboardData?.lovedRecipes && dashboardData.lovedRecipes.length > 0 ? (
                 <div className="space-y-3">
-                  {dashboardData.lovedRecipes.slice(0, 3).map((recipe) => (
-                    <Link
-                      key={recipe.recipe_id}
-                      href={`/recipe/${recipe.recipe_id}`}
-                      className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{recipe.title}</h4>
-                          <p className="text-sm text-gray-600">{recipe.summary}</p>
+                  {dashboardData.lovedRecipes.slice(0, 3).map((recipe) => {
+                    const imageUrl = recipe.s3_medium_url || recipe.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                    return (
+                      <Link
+                        key={recipe.recipe_id}
+                        href={`/recipe/${recipe.recipe_id}`}
+                        className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={recipe.title}
+                          className="w-12 h-12 object-cover rounded-lg flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzliYTViZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                          }}
+                        />
+                        <div className="flex items-center justify-between flex-1">
+                          <div>
+                            <h4 className="font-medium text-gray-900">{recipe.title}</h4>
+                            <p className="text-sm text-gray-600">{recipe.summary}</p>
+                          </div>
+                          <div className="flex items-center space-x-1 text-xs text-gray-500">
+                            <span>❤️ {recipe.reactions.love}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-1 text-xs text-gray-500">
-                          <span>❤️ {recipe.reactions.love}</span>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    );
+                  })}
                   {dashboardData.lovedRecipes.length > 3 && (
                     <p className="text-center text-gray-500 text-sm">
                       +{dashboardData.lovedRecipes.length - 3} more loved
