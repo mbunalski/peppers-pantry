@@ -3,15 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  HeartIcon,
-  ThumbsUpIcon,
   MessageCircleIcon,
   BookmarkIcon,
   ShareIcon,
   ClockIcon,
   UsersIcon,
-  ChefHatIcon,
-  Frown
+  ChefHatIcon
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import SignupModal from "./SignupModal";
@@ -484,7 +481,7 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                             : 'text-gray-600 hover:bg-red-50 hover:text-red-600'
                         }`}
                       >
-                        <HeartIcon className={`h-4 w-4 ${item.social.userReaction === 'love' ? 'fill-current' : ''}`} />
+                        <span className="text-base">❤️</span>
                         <span>{item.social.reactions.love}</span>
                       </button>
                       <button
@@ -495,7 +492,7 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                             : 'text-gray-600 hover:bg-blue-50 hover:text-blue-600'
                         }`}
                       >
-                        <ThumbsUpIcon className={`h-4 w-4 ${item.social.userReaction === 'like' ? 'fill-current' : ''}`} />
+                        <span className="text-base">👍</span>
                         <span>{item.social.reactions.like}</span>
                       </button>
                       <button
@@ -506,7 +503,7 @@ export default function SocialFeed({ feedType = 'global' }: SocialFeedProps) {
                             : 'text-gray-600 hover:bg-yellow-50 hover:text-yellow-600'
                         }`}
                       >
-                        <Frown className={`h-4 w-4 ${item.social.userReaction === 'vomit' ? 'fill-current' : ''}`} />
+                        <span className="text-base">🤮</span>
                         <span>{item.social.reactions.vomit}</span>
                       </button>
                     </div>
